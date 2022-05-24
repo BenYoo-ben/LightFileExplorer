@@ -2,9 +2,23 @@
 ![network_file_explorer_1](https://user-images.githubusercontent.com/57353430/168418387-ab4af734-770d-4e46-a37e-f137608fd05b.png)  
 This program is a simple **Client <--> Server** file explorer based on TCP communications with brief GUI for client.
 
-## Build
+----------
+
+## Build  
 nana and jsoncpp libraries are included in the code but still some other libraries may not be installed in your system.    
-If the build fails, pleases take a look at Makefile(s) build flags to check for the dependencies. 
+If the build fails, pleases take a look at Makefile(s) build flags to check for the dependencies.  
+
+-----------
+
+#### License Notice  
+- jsoncpp is licensed under MIT license
+- nana library is licensed under boost software license  
+Details of the licenses are inside the ext_libs directory located inside server and client directories.  
+Or you can visit below websites for details.  
+[nana]
+[jsoncpp]
+
+-----------
 
 Makefile(s) is used for build:
 ```
@@ -16,7 +30,9 @@ $ make
 $ cd server/  
 $ make  
 ```
-  
+
+------------
+
 ## Run
 Take a look at variables inside  
 ```
@@ -48,4 +64,5 @@ $ ./fs_server > debug.log 2>&1 &
 $ ./fs_prober  
 ```
   
-  
+[jsoncpp]: https://github.com/open-source-parsers/jsoncpp
+[nana]: http://nanapro.org/en-us/
