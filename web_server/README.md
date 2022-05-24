@@ -9,6 +9,5 @@ Install [node.js](https://nodejs.org/)
 Then
 
 ```
-$ node.js server.js
-
+$ node server.js
 ```
