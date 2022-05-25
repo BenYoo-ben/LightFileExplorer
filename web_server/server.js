@@ -1,11 +1,22 @@
 var net = require('net');
 
 function getConnection(port, ip) {
-    var recvData = [];
-
     var client = net.connect({ port: port, host: ip });
 
-    client.on('data', function (data) {
+    return client;
+}
+
+function get_dir_info(socket, dir) {
+    let dir_size = dir.length;
+    let buf = new Buffer.alloc(1 + 4 + dir_size + 4);
+    let recvData = [];
+    buf.writeInt8(6, 0);
+    buf.writeInt32LE(dir_size, 1);
+    for (let i = 0; i < dir_size; i++) {
+        buf.writeInt8(dir[i].charCodeAt(0), i + 5);
+    }
+    socket.write(buf);
+    socket.on('data', function (data) {
         recvData.push(data);
         let data_size = recvData[0].slice(0, 4);
         data_size = data_size.readInt32LE(0);
@@ -17,24 +28,10 @@ function getConnection(port, ip) {
             let str = recvData[0].slice(4).toString();
             recvData.pop();
             str = str.replace(/\s/g, '');
-            // let json = JSON.parse(str);
-            // console.log(json);
-            console.log(str);
+            let json = JSON.parse(str);
+            console.log(json);
         }
     });
-
-    return client;
-}
-
-function get_dir_info(socket, dir) {
-    let dir_size = dir.length;
-    let buf = new Buffer.alloc(1 + 4 + dir_size + 4);
-    buf.writeInt8(6, 0);
-    buf.writeInt32LE(dir_size, 1);
-    for (let i = 0; i < dir_size; i++) {
-        buf.writeInt8(dir[i].charCodeAt(0), i + 5);
-    }
-    socket.write(buf);
 }
 
 function download_file(socket, dir, file) {
@@ -117,7 +114,7 @@ function rename_file(socket, src_dir, new_file_dir) {
     socket.write(buf);
 }
 
-var client = getConnection(55551, '218.48.36.143');
+let client = getConnection(55551, '218.48.36.143');
 // copy_file(client, '/home/pi/test.go', '/home');
 // rename_file(client, '/home/test.go', '/home/test2.go');
-get_dir_info(client, '/home');
+get_dir_info(client, '/home/pi');
