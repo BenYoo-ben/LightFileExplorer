@@ -18,13 +18,13 @@ graph TD
 | Protocol Value(field names) | Protocol Type | Dir. Size            |      Directory       | Data Size               |        Data          |
 | --------------------------- | ------------- | -------------------- | -------------------- | ----------------------- | -------------------- |
 | FIELD SIZE ==========>      | 1 / byte      | 4 / uint32           | Dir. Size / string   | 4 / uint32              | Data Size / byte(s)  |
-| 0:REQ_TYPE_DIR_INFO_DEPTH_2 | 0             | DirName              | Dir. Size            | 0                       | -                    |
-| 1:REQ_TYPE_DOWNLOAD_FILE    | 1             | DirName              | Dir. Size            | FileNameSize            | File Name Size       |
-| 2:REQ_TYPE_COPY_FILE        | 2             | SrcFileName Length   | SrcFileName FullPath | DstFileName Length      | DstFileName FullPath |
-| 3:REQ_TYPE_MOVE_FILE        | 3             | SrcFileName Length   | SrcFileName FullPath | DstFileName Length      | DstFileName FullPath |
-| 4:REQ_TYPE_DELETE_FILE      | 4             | DirName              | Dir. Size            | FileNameSize            | File Name Size       |
-| 5:REQ_TYPE_RENAME_FILE      | 5             | SrcFileName Length   | SrcFileName FullPath | DstFileName Length      | DstFileName FullPath |
-| 6:REQ_TYPE_DIR_INFO_DEPTH_1 | 6             | DirName              | Dir. Size            | 0                       | -                    |
+| 0:REQ_TYPE_DIR_INFO_DEPTH_2 | 0             | DirSize in uint32    | DirName in string    | 0                       | -                    |
+| 1:REQ_TYPE_DOWNLOAD_FILE    | 1             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
+| 2:REQ_TYPE_COPY_FILE        | 2             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 3:REQ_TYPE_MOVE_FILE        | 3             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 4:REQ_TYPE_DELETE_FILE      | 4             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
+| 5:REQ_TYPE_RENAME_FILE      | 5             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 6:REQ_TYPE_DIR_INFO_DEPTH_1 | 6             | DirSize in uint32    | DirName in string    | 0                       | -                    |
   
     
   ### Session Handler: response scenario for each protocol type
