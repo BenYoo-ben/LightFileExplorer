@@ -19,7 +19,7 @@ class TCPClient {
             console.log('local = ' + client.localAddress + ':' + client.localPort);
             console.log('remote = ' + client.remoteAddress + ':' + client.remotePort);
 
-            client.setTimeout(this.timeout || 10000); // timeout : 10분
+            client.setTimeout(this.timeout || 10000);
             console.log('Client setting Encoding:binary, timeout:' + (this.timeout || 10000));
             console.log('Client connect localport : ' + client.localPort);
         });
@@ -36,63 +36,71 @@ class TCPClient {
     }
 
     get_dir_info(dir) {
-        if (!this.isConnected) {
-            console.log('Server Send Failed!');
-            return;
-        }
-        let dir_size = dir.length;
-        let buf = new Buffer.alloc(1 + 4 + dir_size + 4);
-        let recvData = [];
-        buf.writeInt8(6, 0);
-        buf.writeInt32LE(dir_size, 1);
-        for (let i = 0; i < dir_size; i++) {
-            buf.writeInt8(dir[i].charCodeAt(0), i + 5);
-        }
-        this.socket.write(buf);
-        this.socket.on('data', function (data) {
-            recvData.push(data);
-            let data_size = recvData[0].slice(0, 4);
-            data_size = data_size.readInt32LE(0);
-            if (recvData.length > 1) {
-                recvData[0] = Buffer.concat([recvData[0], recvData[1]]);
-                recvData.pop();
+        return new Promise((resolve, reject) => {
+            let dir_size = dir.length;
+            let buf = new Buffer.alloc(1 + 4 + dir_size + 4);
+            let recvData = [];
+            buf.writeInt8(6, 0);
+            buf.writeInt32LE(dir_size, 1);
+            for (let i = 0; i < dir_size; i++) {
+                buf.writeInt8(dir[i].charCodeAt(0), i + 5);
             }
-            if (data_size + 4 == recvData[0].length) {
-                let str = recvData[0].slice(4).toString();
-                recvData.pop();
-                str = str.replace(/\s/g, '');
-                this.json = JSON.parse(str);
-            }
+            this.socket.write(buf);
+            this.socket.on('data', function (data) {
+                recvData.push(data);
+                let data_size = recvData[0].slice(0, 4);
+                data_size = data_size.readInt32LE(0);
+                if (data_size == 0) {
+                    recvData.pop();
+                }
+                if (recvData.length > 1) {
+                    recvData[0] = Buffer.concat([recvData[0], recvData[1]]);
+                    recvData.pop();
+                }
+                if (recvData.length && data_size + 4 === recvData[0].length) {
+                    let str = recvData[0].slice(4).toString();
+                    recvData.pop();
+                    str = str.replace(/(\r\n|\n|\r)/gm, '');
+                    let json = JSON.parse(str);
+                    resolve(json);
+                }
+            });
         });
     }
 
     download_file(dir, file) {
-        let dir_size = dir.length;
-        let file_size = file.length;
-        let recvData = [];
-        let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
-        buf.writeInt8(1, 0);
-        buf.writeInt32LE(dir_size, 1);
-        for (let i = 0; i < dir_size; i++) {
-            buf.writeInt8(dir[i].charCodeAt(0), i + 5);
-        }
-        buf.writeInt32LE(file_size, 1 + 4 + dir_size);
-        for (let i = 0; i < file_size; i++) {
-            buf.writeInt8(file[i].charCodeAt(0), i + 9 + dir_size);
-        }
-        this.socket.write(buf);
-        this.socket.on('data', function (data) {
-            recvData.push(data);
-            let data_size = recvData[0].slice(0, 4);
-            data_size = data_size.readInt32LE(0);
-            if (recvData.length > 1) {
-                recvData[0] = Buffer.concat([recvData[0], recvData[1]]);
-                recvData.pop();
+        return new Promise((resolve, reject) => {
+            let dir_size = dir.length;
+            let file_size = file.length;
+            let recvData = [];
+            let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
+            buf.writeInt8(1, 0);
+            buf.writeInt32LE(dir_size, 1);
+            for (let i = 0; i < dir_size; i++) {
+                buf.writeInt8(dir[i].charCodeAt(0), i + 5);
             }
-            if (data_size + 4 == recvData[0].length) {
-                this.file = recvData[0].slice(4).toString();
-                recvData.pop();
+            buf.writeInt32LE(file_size, 1 + 4 + dir_size);
+            for (let i = 0; i < file_size; i++) {
+                buf.writeInt8(file[i].charCodeAt(0), i + 9 + dir_size);
             }
+            this.socket.write(buf);
+            this.socket.on('data', function (data) {
+                recvData.push(data);
+                let data_size = recvData[0].slice(0, 4);
+                data_size = data_size.readInt32LE(0);
+                if (data_size == 0) {
+                    recvData.pop();
+                }
+                if (recvData.length > 1) {
+                    recvData[0] = Buffer.concat([recvData[0], recvData[1]]);
+                    recvData.pop();
+                }
+                if (recvData.length && data_size + 4 == recvData[0].length) {
+                    let file = recvData[0].slice(4).toString();
+                    recvData.pop();
+                    resolve(file);
+                }
+            });
         });
     }
 
