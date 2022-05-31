@@ -4,10 +4,16 @@ This program is Javascript version of [Network File Explorer](https://github.com
 
 ## Run
 
-Install [node.js](https://nodejs.org/)
+First Install [node.js](https://nodejs.org/)
 
-Then
+Install node modules
 
 ```
-$ node main.js
+$ npm install
+```
+
+Run express server
+
+```
+$ npm start
 ```
