@@ -11,22 +11,19 @@ class TCPClient {
         const client = net.connect({ port, host });
 
         client.on('connect', () => {
-            this.isConnected = true;
             this.socket = client;
 
-            console.log('connect log======================================================================');
-            console.log('connect success');
-            console.log('local = ' + client.localAddress + ':' + client.localPort);
-            console.log('remote = ' + client.remoteAddress + ':' + client.remotePort);
+            // console.log('connect log======================================================================');
+            console.log('tcp connect success');
+            // console.log('local = ' + client.localAddress + ':' + client.localPort);
+            // console.log('remote = ' + client.remoteAddress + ':' + client.remotePort);
 
             client.setTimeout(this.timeout || 10000);
-            console.log('Client setting Encoding:binary, timeout:' + (this.timeout || 10000));
-            console.log('Client connect localport : ' + client.localPort);
+            // console.log('Client setting Encoding:binary, timeout:' + (this.timeout || 10000));
+            // console.log('Client connect localport : ' + client.localPort);
         });
 
-        client.on('close', function () {
-            this.isConnected = false;
-        });
+        client.on('close', function () {});
 
         client.on('error', function (err) {
             console.log('Client Socket Error: ' + JSON.stringify(err));

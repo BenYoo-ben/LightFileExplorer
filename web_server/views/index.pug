@@ -16,7 +16,8 @@ html(lang="en")
     script.
       var json = !{JSON.stringify(json)};
       var keys = Object.keys(json[0]);
-
+      var currentUrl = window.location.href
+      
       $(function() {
         var $thead = $('<thead>').appendTo('.table');
         var $tr = $('<tr>').appendTo($thead);
@@ -24,22 +25,31 @@ html(lang="en")
         for (let i = 0; i < keys.length; i++){
           if (keys[i] === 'type') {
             continue;
+          } else if (keys[i] === 'is_dir'){
+            continue;
           }
           $tr.append($('<td>').text(keys[i]));
         }
         for (let i = 0; i < json.length; i++){
           var $tr = $('<tr>').appendTo('.table');
-          $.each(json[i], function(key, item){
-            if (key === 'type') {
-              return false;
+          for (let j = 0; j < keys.length; j++) {
+            if (keys[j] === 'type') {
+              continue;
+            } else if (keys[j] === 'is_dir') {
+              if (json[i][keys[j]] === "1") {
+                let $td = $('<td>');
+                $td.append($(`<a href="${currentUrl}+${json[i]['name']}"></a>`).text(json[i]['name']));
+                $tr.append($td)
+              } else {
+                $tr.append($('<td>').text(json[i]['name']));
+              }
+              continue;
+            } else if (keys[j] === 'name') {
+              continue;
             }
-            $tr.append($('<td>').text(item));
-            console.log(item);
-          });
+            $tr.append($('<td>').text(json[i][keys[j]]));
+            console.log(json[i][keys[j]]);
+          }
         }
       });
-      
-      //- console.log(json.length);
-      //- var table = document.createElement('table');
-      //- document.getElementById("container").innerHTML = json[0].name;
       
