@@ -13,11 +13,11 @@ router.get('/', function (req, res, next) {
 
 router.get('/:dir', function (req, res, next) {
     var dir = req.params.dir;
-    dir = dir.replaceAll('+', '/');
-    console.log(dir);
+    const decoded = decodeURIComponent(dir);
+    console.log(decoded);
     var client = new TCPClient({ port: 55551, host: '218.48.36.143' });
-    client.get_dir_info('/home' + dir).then((json) => {
-        res.render('index', { json: json, cur_dir: '/home' + dir });
+    client.get_dir_info('/home' + decoded).then((json) => {
+        res.render('index', { json: json, cur_dir: '/home' + decoded });
         client.socket.destroy();
     });
 });

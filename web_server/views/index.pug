@@ -38,7 +38,8 @@ html(lang="en")
             } else if (keys[j] === 'is_dir') {
               if (json[i][keys[j]] === "1") {
                 let $td = $('<td>');
-                $td.append($(`<a href="${currentUrl}+${json[i]['name']}"></a>`).text(json[i]['name']));
+                const encoded = encodeURIComponent('/' + json[i]['name']);
+                $td.append($(`<a href="${currentUrl}${encoded}"></a>`).text(json[i]['name']));
                 $tr.append($td)
               } else {
                 $tr.append($('<td>').text(json[i]['name']));
