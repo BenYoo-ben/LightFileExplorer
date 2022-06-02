@@ -171,58 +171,56 @@ lock_handler::lock_handler() {
 }
 
 void lock_handler::add_lock(int lock_no, std::string full_name) {
-    std::map<std::string, int> lock;
+    std::map<std::string, int> *lock = nullptr;
 
     if (lock_no == SOFT_LOCK) {
-        lock = soft_lock;
+        lock = &soft_lock;
     } else if (lock_no == HARD_LOCK) {
-        lock = hard_lock;
+        lock = &hard_lock;
     }
 
-    if (lock.count(full_name)) {
-        int value = lock[full_name];
+    if ((*lock).count(full_name)) {
+        int value = (*lock)[full_name];
         value++;
-        lock[full_name] = value;
+        (*lock)[full_name] = value;
         return;
     } else {
-        lock.insert(std::pair<std::string, int>(full_name, 1));
+        (*lock)[full_name] = 1;
         return;
     }
 }
 
 void lock_handler::remove_lock(int lock_no, std::string full_name) {
-    std::map<std::string, int> lock;
+    std::map<std::string, int> *lock = nullptr;
 
     if (lock_no == SOFT_LOCK) {
-        lock = soft_lock;
+        lock = &soft_lock;
     } else if (lock_no == HARD_LOCK) {
-        lock = hard_lock;
+        lock = &hard_lock;
     }
 
-    if (lock.count(full_name)) {
-        int value = lock[full_name];
+    if ((*lock).count(full_name)) {
+        int value = (*lock)[full_name];
 
         if (value == 1) {
-            lock.erase(full_name);
+            (*lock).erase(full_name);
         } else {
             value--;
-            lock[full_name] = value;
+            (*lock)[full_name] = value;
         }
         return;
     }
 }
 bool lock_handler::check_lock(int lock_no, std::string full_name) {
-    std::map<std::string, int> lock;
+    const std::map<std::string, int> *lock = nullptr;
 
     if (lock_no == SOFT_LOCK) {
-        lock = soft_lock;
+        lock = &soft_lock;
     } else if (lock_no == HARD_LOCK) {
-        lock = hard_lock;
+        lock = &hard_lock;
     }
 
-    debug_lock();
-
-    if (lock.count(full_name)) {
+    if ((*lock).count(full_name)) {
         return false;
     } else {
         return true;
