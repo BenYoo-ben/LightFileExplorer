@@ -2,55 +2,19 @@ doctype html
 html(lang="en")
   head
     meta(charset="UTF-8")
-    meta(http-equiv="X-UA-Compatible", content="IE=edge")
-    meta(name="viewport", content="width=device-width, initial-scale=1.0")
-    link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css")
-    link(rel="stylesheet", href="/stylesheets/style.css")
+    meta(http-equiv="X-UA-Compatible" content="IE=edge")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css")
+    link(rel="stylesheet" href="/stylesheets/style.css")
+    link(rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon")
     title Light File Explorer
   body 
     h1.display-2.text-center Current Directory #{cur_dir}
     .container
-      table.table.table-bordered.text-center
+      table.table.table-bordered.text-center.table-hover
     script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js")
     script(src="https://code.jquery.com/jquery-1.12.4.min.js") 
     script.
       var json = !{JSON.stringify(json)};
-      var keys = Object.keys(json[0]);
-      var currentUrl = window.location.href
-      
-      $(function() {
-        var $thead = $('<thead>').appendTo('.table');
-        var $tr = $('<tr>').appendTo($thead);
-        $tr.addClass('table-secondary text-capitalize fs-5 fw-bold')
-        for (let i = 0; i < keys.length; i++){
-          if (keys[i] === 'type') {
-            continue;
-          } else if (keys[i] === 'is_dir'){
-            continue;
-          }
-          $tr.append($('<td>').text(keys[i]));
-        }
-        for (let i = 0; i < json.length; i++){
-          var $tr = $('<tr>').appendTo('.table');
-          for (let j = 0; j < keys.length; j++) {
-            if (keys[j] === 'type') {
-              continue;
-            } else if (keys[j] === 'is_dir') {
-              if (json[i][keys[j]] === "1") {
-                let $td = $('<td>');
-                const encoded = encodeURIComponent('/' + json[i]['name']);
-                $td.append($(`<a href="${currentUrl}${encoded}"></a>`).text(json[i]['name']));
-                $tr.append($td)
-              } else {
-                $tr.append($('<td>').text(json[i]['name']));
-              }
-              continue;
-            } else if (keys[j] === 'name') {
-              continue;
-            }
-            $tr.append($('<td>').text(json[i][keys[j]]));
-            console.log(json[i][keys[j]]);
-          }
-        }
-      });
-      
+    script(src="/javascripts/index.js") 
+

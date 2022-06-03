@@ -10,3 +10,9 @@ a {
 h1 {
     margin-bottom: 50px;
 }
+
+td.icon,
+td.download {
+    padding-left: 0;
+    padding-right: 0;
+}
