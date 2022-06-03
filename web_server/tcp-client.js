@@ -93,7 +93,7 @@ class TCPClient {
                     recvData.pop();
                 }
                 if (recvData.length && data_size + 4 == recvData[0].length) {
-                    let file = recvData[0].slice(4).toString();
+                    let file = recvData[0].slice(4);
                     recvData.pop();
                     resolve(file);
                 }
