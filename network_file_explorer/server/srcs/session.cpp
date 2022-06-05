@@ -47,7 +47,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %u\n", json_str.length());
+                printf("JSON_STR LEN: %lu\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) -4,
                         "%s", json_str.c_str());
@@ -129,7 +129,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    return -1;
+                }
 
                 lock->remove_lock(lock->SOFT_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
@@ -159,7 +163,12 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_MOVE_FILE, write != 4");
+                    return -1;
+                }
+
 
                 lock->remove_lock(lock->HARD_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
@@ -185,7 +194,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_DELETE_FILE, write != 4");
+                    return -1;
+                }
                 break;
             }
         }
@@ -201,7 +214,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_RENAME_FILE, write != 4");
+                    return -1;
+                }
                 break;
             }
         }
@@ -230,7 +247,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %u\n", json_str.length());
+                printf("JSON_STR LEN: %lu\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) - 4,
                         "%s", json_str.c_str());
@@ -271,9 +288,17 @@ int session_object::handle_request(char type,
                 // send ack, server is ready for data stream
                 uint32_t temp = 0;
                 memset(&temp, 0x00, sizeof(uint32_t));
-                write(c_sock, &temp, sizeof(uint32_t));
+                size_t ret = write(c_sock, &temp, sizeof(uint32_t));
+                if (ret != sizeof(uint32_t)) {
+                    perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
+                    return -1;
+                }
 
-                read(c_sock, &temp, sizeof(uint32_t));
+                ret = read(c_sock, &temp, sizeof(uint32_t));
+                if (ret != sizeof(uint32_t)) {
+                    perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
+                    return -1;
+                }
 
                 FILE *file = fopen(full_file.c_str(), "wb");
 
