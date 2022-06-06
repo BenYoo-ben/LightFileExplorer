@@ -6,9 +6,29 @@ a {
     color: #00b7ff;
 }
 
-h1 {
-    margin-top: 50px;
-    margin-bottom: 50px;
+#dir {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    color: gray;
+}
+
+#dir a {
+    color: gray;
+    text-decoration: none;
+}
+
+#dir a:last-child {
+    color: black;
+    font-weight: bolder;
+}
+
+#logo {
+    margin-right: 20px;
+}
+
+#nav-title {
+    color: white;
+    font-style: italic;
 }
 
 td.icon,
@@ -21,7 +41,7 @@ td.download {
     .auth {
         display: none;
     }
-    h1 {
+    #dir {
         margin-top: 20px;
         margin-bottom: 20px;
     }

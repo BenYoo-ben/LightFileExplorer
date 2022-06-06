@@ -1,4 +1,4 @@
-var net = require('net');
+const net = require('net');
 
 class TCPClient {
     constructor({ port, host, timeout }) {
@@ -12,15 +12,8 @@ class TCPClient {
 
         client.on('connect', () => {
             this.socket = client;
-
-            // console.log('connect log======================================================================');
             console.log('tcp connect success');
-            // console.log('local = ' + client.localAddress + ':' + client.localPort);
-            // console.log('remote = ' + client.remoteAddress + ':' + client.remotePort);
-
             client.setTimeout(this.timeout || 10000);
-            // console.log('Client setting Encoding:binary, timeout:' + (this.timeout || 10000));
-            // console.log('Client connect localport : ' + client.localPort);
         });
 
         client.on('close', function () {});
