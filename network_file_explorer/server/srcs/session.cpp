@@ -412,9 +412,10 @@ void *session_object::run() {
             << std::endl;
 
             if (handle_request(type, dir_str, data_str, c_sock) < 0) {
-                char send_buffer[4];
-                memset(send_buffer, 0x0, 4);
-                if (write(c_sock, send_buffer, 4) < 0) {
+                // errCode = 7
+                uint32_t errCode = 0x07;
+
+                if (write(c_sock, &errCode, sizeof(uint32_t)) < 0) {
                     std::cout << "Write Failed(HARD LOCK FAIL)" << std::endl;
                 }
             }
