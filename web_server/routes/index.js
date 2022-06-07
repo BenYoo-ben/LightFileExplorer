@@ -58,4 +58,34 @@ router.get('/:dir/download', function (req, res, next) {
     });
 });
 
+// File Upload Route
+var fileupload = require("express-fileupload");
+router.use(fileupload());
+router.post('/:dir/upload', function(req, res, next) {
+    var dir = req.params.dir;
+    var decoded = decodeURIComponent(dir);
+    var req_dir = path.dirname(decoded) + '/';
+    if (req_dir === '//') {
+        req_dir = '/';
+    }
+    
+    console.log("Expected DIR: " + req_dir);
+
+    var file;
+
+    if (!req.files) {
+        res.send("File was not found");
+        return ;
+    }
+
+    file = req.files.fileUploaded;
+
+    file.mv("uploads/" + file.name, function(err) {
+        if (err) {
+            return res.status(500).send(err);
+        }
+        res.send("File successfully uploaded!");
+    });
+});
+
 module.exports = router;
