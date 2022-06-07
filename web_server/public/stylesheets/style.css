@@ -9,7 +9,8 @@ a {
 #dir {
     margin-top: 30px;
     margin-bottom: 30px;
-    color: gray;
+    /* color: gray; */
+    --bs-breadcrumb-divider: '>';
 }
 
 #dir a {
@@ -17,9 +18,9 @@ a {
     text-decoration: none;
 }
 
-#dir a:last-child {
+#dir li:last-child {
     color: black;
-    font-weight: bolder;
+    font-weight: bold;
 }
 
 #logo {
@@ -32,9 +33,26 @@ a {
 }
 
 td.icon,
-td.download {
+td.dropdown > a {
     padding-left: 0;
     padding-right: 0;
+}
+
+td.dropdown {
+    padding: 0;
+}
+
+.dropdown-toggle::after {
+    display: none;
+}
+
+.dropdown-menu {
+    min-width: 0;
+}
+
+#dropdownMenuLink {
+    display: block;
+    height: 100%;
 }
 
 @media (max-width: 767.98px) {
