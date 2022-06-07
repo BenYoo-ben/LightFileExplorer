@@ -81,6 +81,7 @@ class TCPClient {
                 buf.writeInt8(file[i].charCodeAt(0), i + 9 + dir_size);
             }
             this.socket.write(buf);
+
             this.socket.on('data', function (data) {
                 recvData.push(data);
                 let data_size = recvData[0].slice(0, 4);
@@ -167,21 +168,33 @@ class TCPClient {
 
     upload_file(dir, file) {
         return new Promise((resolve, reject) => {
-        let dir_size = dir.length;
-        let file_size = file.length;
-        let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
+            console.log("DIR : " + dir + "     FILE : " + file);
+            let dir_size = dir.length;
+            let file_size = file.length;
+            let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
 
-        // protocol 7: UploadFile
-        buf.writeInt8(7, 0);
-        buf.writeInt32LE(dir_size, 1);
-        for (let i = 0; i < dir_size; i++) {
-            buf.writeInt8(dir[i].charCodeAt(0), 1 + 4 + i);
-        }
-        buf.writeInt32LE(file, 1 + 4 + dir_size);
-        for (let i = 0; i < file_size; i++) {
-            buf.writeInt8(file[i].charCodeAt(0), 1 + 4 + dir_size + 4 + i)
-        }
-        this.socket.write(buf)
+            // protocol 7: UploadFile
+            buf.writeInt8(7, 0);
+            buf.writeInt32LE(dir_size, 1);
+            for (let i = 0; i < dir_size; i++) {
+                buf.writeInt8(dir[i].charCodeAt(0), 1 + 4 + i);
+            }
+            buf.writeInt32LE(file_size, 1 + 4 + dir_size);
+            for (let i = 0; i < file_size; i++) {
+                buf.writeInt8(file[i].charCodeAt(0), 1 + 4 + dir_size + 4 + i)
+            }
+            this.socket.write(buf)
+
+            
+            let recvBuf = new Buffer.alloc(4);
+            // get ack from file server
+            this.socket.on('data', function (data) {
+                recvBuf.push(data);
+                // make to unsigned
+                ackVal = ackVal >>> 0;
+
+                console.log("ACK : " + ackVal);
+            });
             
         });
     }

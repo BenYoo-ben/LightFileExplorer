@@ -64,12 +64,14 @@ router.use(fileupload());
 router.post('/:dir/upload', function(req, res, next) {
     var dir = req.params.dir;
     var decoded = decodeURIComponent(dir);
-    var req_dir = path.dirname(decoded) + '/';
+    var req_dir = decoded + '/';
     if (req_dir === '//') {
         req_dir = '/';
     }
     
-    console.log("Expected DIR: " + req_dir);
+    console.log("req_dir: " + req_dir);
+    console.log("dir : " + dir);
+    console.log("decoded:" + decoded);
 
     var file;
 
@@ -84,6 +86,13 @@ router.post('/:dir/upload', function(req, res, next) {
         if (err) {
             return res.status(500).send(err);
         }
+
+        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        client.upload_file('/home' + req_dir, file.name).then((file) => {
+            // handle err or resolve
+        });
+        
+        client.socket.destroy();
         res.send("File successfully uploaded!");
     });
 });
