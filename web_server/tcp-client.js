@@ -1,4 +1,6 @@
+const fs = require("fs");
 const net = require('net');
+
 
 class TCPClient {
     constructor({ port, host, timeout }) {
@@ -78,6 +80,7 @@ class TCPClient {
                 buf.writeInt8(file[i].charCodeAt(0), i + 9 + dir_size);
             }
             this.socket.write(buf);
+
             this.socket.on('data', function (data) {
                 recvData.push(data);
                 let data_size = recvData[0].slice(0, 4);
@@ -168,6 +171,52 @@ class TCPClient {
             buf.writeInt8(new_file_dir[i].charCodeAt(0), i + 9 + src_dir_size);
         }
         this.socket.write(buf);
+    }
+
+    upload_file(dir, file) {
+        return new Promise((resolve, reject) => {
+            console.log("DIR : " + dir + "     FILE : " + file);
+            let dir_size = dir.length;
+            let file_size = file.length;
+            let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
+
+            // protocol 7: UploadFile
+            buf.writeInt8(7, 0);
+            buf.writeInt32LE(dir_size, 1);
+            for (let i = 0; i < dir_size; i++) {
+                buf.writeInt8(dir[i].charCodeAt(0), 1 + 4 + i);
+            }
+            buf.writeInt32LE(file_size, 1 + 4 + dir_size);
+            for (let i = 0; i < file_size; i++) {
+                buf.writeInt8(file[i].charCodeAt(0), 1 + 4 + dir_size + 4 + i)
+            }
+            this.socket.write(buf)
+
+            
+            let recvBuf = new Buffer.alloc(4);
+            // get ack from file server
+            this.socket.on('data', function (data) {
+                let ackVal = parseInt(data[0]) >>> 0;
+                // make to unsigned
+                if (ackVal == 0) {
+                    var fstats = fs.statSync("./uploads/" + file);
+                    var fileSize = fstats.size >>> 0;
+                    var fSizeBuf =  Buffer.alloc(4);
+                    fSizeBuf.writeInt32LE(fileSize, 0);
+                    this.write(fSizeBuf);
+                    console.log("FILE SIZE : " + fileSize);
+                    var fData = fs.readFileSync("./uploads/" + file, function (err, data) {
+                        if (err) {
+                            throw err;
+                        }
+                        this.write(data); 
+                        resolve(0);
+                    });
+                } else {
+                    resolve(1);
+                }   
+            });
+        });
     }
 }
 

@@ -47,7 +47,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %u\n", json_str.length());
+                printf("JSON_STR LEN: %lu\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) -4,
                         "%s", json_str.c_str());
@@ -77,6 +77,8 @@ int session_object::handle_request(char type,
                 struct stat file_stat = fm.get_stat_of_file(full_file.c_str());
                 int file_size = fm.stat_get_size(&file_stat);
                 const int kBufSize = 4 + file_size + 1;
+
+                // can't send file larger than memory size this way
                 char send_buffer[kBufSize];
 
                 int fd = open(full_file.c_str(), O_RDONLY);
@@ -127,7 +129,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    return -1;
+                }
 
                 lock->remove_lock(lock->SOFT_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
@@ -157,7 +163,12 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_MOVE_FILE, write != 4");
+                    return -1;
+                }
+
 
                 lock->remove_lock(lock->HARD_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
@@ -183,7 +194,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_DELETE_FILE, write != 4");
+                    return -1;
+                }
                 break;
             }
         }
@@ -199,7 +214,11 @@ int session_object::handle_request(char type,
                     return -1;
                 }
                 memset(command, 0x0, 4);
-                write(c_sock, command, 4);
+                size_t ret = write(c_sock, command, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_RENAME_FILE, write != 4");
+                    return -1;
+                }
                 break;
             }
         }
@@ -228,9 +247,9 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %u\n", json_str.length());
+                printf("JSON_STR LEN: %lu\n", json_str.length());
 
-                snprintf(send_buffer + 4, sizeof(send_buffer) -4,
+                snprintf(send_buffer + 4, sizeof(send_buffer) - 4,
                         "%s", json_str.c_str());
                 
                 if (write(c_sock, send_buffer, 4 + buffer_size) < 0) {
@@ -239,11 +258,82 @@ int session_object::handle_request(char type,
                     return -1;
                 }
 
+                // debug
+                printf("Sent Size : %u\n", 4 + buffer_size);
+
+
                 lock->remove_lock(lock->SOFT_LOCK, dir);
             } else {
                 // HARD LOCKED, can't read
                 return -1;
             }
+            break;
+        }
+        case REQ_TYPE_UPLOAD_FILE: {
+         std::stringstream ss;
+            ss << dir << data;
+            std::string full_file = ss.str();
+
+            if (lock->check_lock(lock->SOFT_LOCK, full_file) && lock->check_lock(lock->HARD_LOCK, full_file)) {
+                lock->add_lock(lock->HARD_LOCK, full_file);
+
+                struct stat dummyStat;
+                // check if file exists
+                if (lstat(full_file.c_str(), &dummyStat) >= 0) {
+                    perror("Requested file already exists!");
+                    // file is already present
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
+                    return -1;
+                }
+
+                // send ack, server is ready for data stream
+                uint32_t temp = 0;
+                memset(&temp, 0x00, sizeof(uint32_t));
+                size_t ret = write(c_sock, &temp, sizeof(uint32_t));
+                if (ret != sizeof(uint32_t)) {
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
+                    perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
+                    return -1;
+                }
+
+                ret = read(c_sock, &temp, sizeof(uint32_t));
+                if (ret != sizeof(uint32_t)) {
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
+                    perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
+                    return -1;
+                }
+
+                FILE *file = fopen(full_file.c_str(), "wb");
+
+                char recvBuffer[global_window_size];
+
+                uint32_t fSum = 0;
+                size_t readBytes = -1;
+                while (fSum < temp) {
+                   readBytes = read(c_sock, recvBuffer, global_window_size);
+                   if (readBytes <= 0) {
+                       perror("READ FAILED WHILE READING STREAM");
+                       lock->remove_lock(lock->HARD_LOCK, full_file);
+                       fclose(file);
+                       return -1;
+                   }
+
+                   fSum += readBytes;
+
+                   if (fwrite(recvBuffer, 1, readBytes, file) != readBytes) {
+                       perror("WRITE FAILED WHILE PROCESSING STREAM");
+                       lock->remove_lock(lock->HARD_LOCK, full_file);
+                       fclose(file);
+                       return -1;
+                   }
+                }
+
+                fclose(file);
+            } else {
+                // HARD LOCKED, can't read
+                return -1;
+            }
+            break;
         }
         default: {
             std::cout << "Unrecognized Code : " << type << std::endl;
@@ -325,9 +415,11 @@ void *session_object::run() {
             << std::endl;
 
             if (handle_request(type, dir_str, data_str, c_sock) < 0) {
-                char send_buffer[4];
-                memset(send_buffer, 0x0, 4);
-                if (write(c_sock, send_buffer, 4) < 0) {
+                // errCode = 7
+                uint32_t errCode = 0x07;
+                perror("handle_request failed: 07");
+
+                if (write(c_sock, &errCode, sizeof(uint32_t)) < 0) {
                     std::cout << "Write Failed(HARD LOCK FAIL)" << std::endl;
                 }
             }
