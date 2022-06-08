@@ -5,6 +5,7 @@ class TCPClient {
         this.socket = this.create({ port, host, timeout });
     }
 
+    // Create TCP connection to File Server
     create({ port, host, timeout }) {
         this.timeout = timeout;
 
@@ -17,7 +18,6 @@ class TCPClient {
         });
 
         client.on('close', function () {});
-
         client.on('error', function (err) {
             console.log('Client Socket Error: ' + JSON.stringify(err));
         });
@@ -25,6 +25,8 @@ class TCPClient {
         return client;
     }
 
+    // Get directory's information
+    // ex) get_dir_info('home');
     get_dir_info(dir) {
         return new Promise((resolve, reject) => {
             let dir_size = dir.length;
@@ -58,6 +60,8 @@ class TCPClient {
         });
     }
 
+    // Download a file
+    // ex) download_file('/home/', 'test');
     download_file(dir, file) {
         return new Promise((resolve, reject) => {
             let dir_size = dir.length;
@@ -94,6 +98,8 @@ class TCPClient {
         });
     }
 
+    // Copy file
+    // ex) copy_file('/home/test', '/home/pi/test');
     copy_file(src_dir, dst_dir) {
         let src_dir_size = src_dir.length;
         let dst_dir_size = dst_dir.length;
@@ -110,6 +116,8 @@ class TCPClient {
         this.socket.write(buf);
     }
 
+    // Move file
+    // ex) move_file('/home/test', '/home/test2');
     move_file(src_dir, dst_dir) {
         let src_dir_size = src_dir.length;
         let dst_dir_size = dst_dir.length;
@@ -126,6 +134,8 @@ class TCPClient {
         this.socket.write(buf);
     }
 
+    // Delete file
+    // ex) delete_file('/home/', 'test');
     delete_file(dir, file) {
         let dir_size = dir.length;
         let file_size = file.length;
@@ -142,6 +152,8 @@ class TCPClient {
         this.socket.write(buf);
     }
 
+    // Rename file
+    // ex) rename_file('/home/test', '/home/test2');
     rename_file(src_dir, new_file_dir) {
         let src_dir_size = src_dir.length;
         let new_dir_size = new_file_dir.length;

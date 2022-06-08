@@ -9,7 +9,6 @@ a {
 #dir {
     margin-top: 30px;
     margin-bottom: 30px;
-    /* color: gray; */
     --bs-breadcrumb-divider: '>';
 }
 

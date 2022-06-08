@@ -7,7 +7,7 @@ const TCPClient = require('../tcp-client');
 let tcp_server = fs.readFileSync('tcp-server.json');
 tcp_server = JSON.parse(tcp_server);
 
-/* GET home page. */
+// Get Home directory's info
 router.get('/', async (req, res, next) => {
     let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
     let json = await client.get_dir_info('/home');
@@ -21,6 +21,7 @@ router.get('/', async (req, res, next) => {
     client.socket.destroy();
 });
 
+// Get :dir's info
 router.get('/:dir', async (req, res, next) => {
     let dir = req.params.dir;
     const decoded = decodeURIComponent(dir);
@@ -36,6 +37,7 @@ router.get('/:dir', async (req, res, next) => {
     client.socket.destroy();
 });
 
+// Download File
 router.get('/:dir/download', async (req, res, next) => {
     let dir = req.params.dir;
     let decoded = decodeURIComponent(dir);
