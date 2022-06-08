@@ -1,6 +1,25 @@
 const currentUrl = window.location.href;
 
+// for upload UI, dynamically make UI
+var uploadForm = document.createElement("form");
+uploadForm.setAttribute("method",  "post");
+uploadForm.setAttribute("action", currentUrl + "/upload");
+uploadForm.setAttribute("enctype", "multipart/form-data");
+uploadForm.setAttribute("style", "margin: 2% 5%;"); 
+
+var uploadGetFile = document.createElement("input");
+var uploadButton = document.createElement("input");
+uploadGetFile.setAttribute("type", "file");
+uploadGetFile.setAttribute("name", "fileUploaded");
+
+uploadButton.setAttribute("type", "image");
+uploadButton.setAttribute("src", "/images/cloud-upload.svg");
+uploadForm.appendChild(uploadGetFile);
+uploadForm.appendChild(uploadButton);
+
 $(function () {
+    document.body.append(uploadForm);
+
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
     let url = '/';
@@ -109,4 +128,5 @@ $(function () {
         td_dropdown.append(dropdown_menu);
         tr.append(td_dropdown);
     }
+
 });
