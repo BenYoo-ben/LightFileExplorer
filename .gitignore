@@ -34,5 +34,6 @@ build/
 
 ### Dependency directories ###
 node_modules/
+uploads/
 
 tcp-server.json
