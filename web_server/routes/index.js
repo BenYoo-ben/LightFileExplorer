@@ -81,19 +81,24 @@ router.post('/:dir/upload', function(req, res, next) {
     }
 
     file = req.files.fileUploaded;
-
+    console.log("File Uploaded ! ");
     file.mv("uploads/" + file.name, function(err) {
         if (err) {
             return res.status(500).send(err);
         }
 
-        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
-        client.upload_file('/home' + req_dir, file.name).then((file) => {
+        var client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        client.upload_file('/home' + req_dir, file.name).then((retVal) => {
             // handle err or resolve
+            if (retVal == 0) {
+                console.log("Upload Process Success");
+                client.socket.destroy();
+            } else {
+                console.log("Upload Process Failed");
+                client.socket.destroy();
+            }
         });
-        
-        client.socket.destroy();
-        res.send("File successfully uploaded!");
+
     });
 });
 

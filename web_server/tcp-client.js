@@ -1,4 +1,5 @@
 var net = require('net');
+var fs = require("fs");
 
 class TCPClient {
     constructor({ port, host, timeout }) {
@@ -189,13 +190,26 @@ class TCPClient {
             let recvBuf = new Buffer.alloc(4);
             // get ack from file server
             this.socket.on('data', function (data) {
-                recvBuf.push(data);
+                let ackVal = parseInt(data[0]) >>> 0;
                 // make to unsigned
-                ackVal = ackVal >>> 0;
-
-                console.log("ACK : " + ackVal);
+                if (ackVal == 0) {
+                    var fstats = fs.statSync("./uploads/" + file);
+                    var fileSize = fstats.size >>> 0;
+                    var fSizeBuf =  Buffer.alloc(4);
+                    fSizeBuf.writeInt32LE(fileSize, 0);
+                    this.write(fSizeBuf);
+                    console.log("FILE SIZE : " + fileSize);
+                    var fData = fs.readFileSync("./uploads/" + file, function (err, data) {
+                        if (err) {
+                            throw err;
+                        }
+                        this.write(data); 
+                        resolve(0);
+                    });
+                } else {
+                    resolve(1);
+                }   
             });
-            
         });
     }
 }
