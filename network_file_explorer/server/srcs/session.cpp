@@ -280,6 +280,7 @@ int session_object::handle_request(char type,
                 struct stat dummyStat;
                 // check if file exists
                 if (lstat(full_file.c_str(), &dummyStat) >= 0) {
+                    perror("Requested file already exists!");
                     // file is already present
                     lock->remove_lock(lock->HARD_LOCK, full_file);
                     return -1;
@@ -290,12 +291,14 @@ int session_object::handle_request(char type,
                 memset(&temp, 0x00, sizeof(uint32_t));
                 size_t ret = write(c_sock, &temp, sizeof(uint32_t));
                 if (ret != sizeof(uint32_t)) {
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
                     return -1;
                 }
 
                 ret = read(c_sock, &temp, sizeof(uint32_t));
                 if (ret != sizeof(uint32_t)) {
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
                     return -1;
                 }
@@ -308,7 +311,7 @@ int session_object::handle_request(char type,
                 size_t readBytes = -1;
                 while (fSum < temp) {
                    readBytes = read(c_sock, recvBuffer, global_window_size);
-                   if (readBytes < 0) {
+                   if (readBytes <= 0) {
                        perror("READ FAILED WHILE READING STREAM");
                        lock->remove_lock(lock->HARD_LOCK, full_file);
                        fclose(file);
@@ -414,6 +417,7 @@ void *session_object::run() {
             if (handle_request(type, dir_str, data_str, c_sock) < 0) {
                 // errCode = 7
                 uint32_t errCode = 0x07;
+                perror("handle_request failed: 07");
 
                 if (write(c_sock, &errCode, sizeof(uint32_t)) < 0) {
                     std::cout << "Write Failed(HARD LOCK FAIL)" << std::endl;
