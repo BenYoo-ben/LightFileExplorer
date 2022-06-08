@@ -1,5 +1,4 @@
-var keys = Object.keys(json[0]);
-var currentUrl = window.location.href;
+const currentUrl = window.location.href;
 
 // for upload UI, dynamically make UI
 var uploadForm = document.createElement("form");
@@ -19,79 +18,115 @@ uploadForm.appendChild(uploadGetFile);
 uploadForm.appendChild(uploadButton);
 
 $(function () {
-
     document.body.append(uploadForm);
-    var $thead = $('<thead>').appendTo('.table');
-    var $tr = $('<tr>').appendTo($thead);
-    $tr.addClass('table-secondary text-capitalize fs-5 fw-bold');
-    $tr.append($('<td>').addClass('icon'));
-    for (let i = 0; i < keys.length; i++) {
-        if (keys[i] === 'type') {
-            continue;
-        } else if (keys[i] === 'is_dir') {
-            continue;
-        }
-        let td = $('<td>');
-        td.text(keys[i]);
-        td.addClass(keys[i]);
-        $tr.append(td);
 
+    // Show directory hierarchy using bootstrap breadcrumb
+    const dirs = cur_dir.split('/');
+    let url = '/';
+    let ol = $('<ol>');
+    ol.addClass('breadcrumb');
+    for (let i = 0; i < dirs.length; i++) {
+        let li = $('<li>');
+        li.addClass('breadcrumb-item');
+        if (i === dirs.length - 1) {
+            li.text(dirs[i]);
+            li.addClass('active');
+        } else if (i === 0) {
+            let a = $('<a>').attr('href', url).text(dirs[i]);
+            li.append(a);
+        } else {
+            let encoded = encodeURIComponent('/' + dirs[i]);
+            url = url + encoded;
+            let a = $('<a>').attr('href', url).text(dirs[i]);
+            li.append(a);
+        }
+        ol.append(li);
     }
-    $tr.append($('<td>').addClass('download'));
+    $('#dir').append(ol);
+
+    // With json file from tcp file server, dynamically make table
+
+    // Create table headers
+    let thead = $('<thead>').appendTo('.table');
+    let tr = $('<tr>').appendTo(thead);
+    let ico = $('<img>');
+    ico.attr('src', '/images/file-earmark.svg');
+    ico.attr('alt', 'folder');
+    tr.addClass('table-secondary fw-bold align-middle');
+    tr.append($('<td>').addClass('icon').append(ico));
+    tr.append($('<td>').addClass('name').text('Name'));
+    tr.append($('<td>').addClass('time').text('Modified'));
+    tr.append($('<td>').addClass('size').text('File Size'));
+    tr.append($('<td>').addClass('download'));
+
+    // Filling table data
     for (let i = 0; i < json.length; i++) {
-        var $tr = $('<tr>').appendTo('.table');
+        let tr = $('<tr>').appendTo('.table');
         if (json[i]['is_dir'] === '1') {
-            let td = $('<td>');
+            let td_icon = $('<td>');
             let ico = $('<img>');
-            td.addClass('icon');
+            let td_name = $('<td>');
+            const encoded = encodeURIComponent('/' + json[i]['name']);
+
+            // Icon for a directory
+            td_icon.addClass('icon');
             ico.attr('src', '/images/folder.svg');
             ico.attr('alt', 'folder');
-            td.append(ico);
-            $tr.append(td);
+            td_icon.append(ico);
+            tr.append(td_icon);
+
+            // Directory name with its url
+            td_name.addClass('name');
+            td_name.append($(`<a href="${currentUrl}${encoded}"></a>`).text(json[i]['name']));
+            tr.append(td_name);
+
+            // Modified time
+            tr.append($('<td>').text(json[i]['time']).addClass('time'));
+
+            // Directory size
+            tr.append($('<td>').text('-').addClass('size'));
         } else {
-            let td = $('<td>');
+            let td_icon = $('<td>');
             let ico = $('<img>');
-            td.addClass('icon');
+
+            // Icon for a file
+            td_icon.addClass('icon');
             ico.attr('src', '/images/file-earmark.svg');
             ico.attr('alt', 'file');
-            td.append(ico);
-            $tr.append(td);
+            td_icon.append(ico);
+            tr.append(td_icon);
+
+            // File name, modified time, size
+            tr.append($('<td>').text(json[i]['name']).addClass('name'));
+            tr.append($('<td>').text(json[i]['time']).addClass('time'));
+            tr.append($('<td>').text(json[i]['size']).addClass('size'));
         }
-        for (let j = 0; j < keys.length; j++) {
-            if (keys[j] === 'type') {
-                continue;
-            } else if (keys[j] === 'is_dir') {
-                if (json[i][keys[j]] === '1') {
-                    let $td = $('<td>');
-                    $td.addClass('name');
-                    const encoded = encodeURIComponent('/' + json[i]['name']);
-                    $td.append($(`<a href="${currentUrl}${encoded}"></a>`).text(json[i]['name']));
-                    $tr.append($td);
-                } else {
-                    $tr.append($('<td>').text(json[i]['name']).addClass('name'));
-                }
-                continue;
-            } else if (keys[j] === 'name') {
-                continue;
-            }
-            $tr.append($('<td>').text(json[i][keys[j]]).addClass(keys[j]));
-        }
+
+        // Dropdown buttons for each directories or files
+
+        let td_dropdown = $('<td>');
+        td_dropdown.addClass('dropdown');
+        td_dropdown.html(`
+        <a class="btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="/images/three-dots-vertical.svg" alt="dropdown"/>
+        </a>`);
+        let dropdown_menu = $(`<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1"></ul>`);
+
+        // Download files for file only
         if (json[i]['is_dir'] === '0') {
-            let td = $('<td>');
-            let a = $('<a>');
-            let ico = $('<img>');
             const encoded = encodeURIComponent('/' + json[i]['name']);
             let url = currentUrl + encoded + '/download';
-            td.addClass('download');
-            a.attr('href', url);
-            ico.attr('src', '/images/arrow-down-square.svg');
-            ico.attr('alt', 'file');
-            a.append(ico);
-            td.append(a);
-            $tr.append(td);
-        } else {
-            $tr.append($('<td>').addClass('download'));
+            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', url)));
         }
+
+        // Buttons for later purposes
+        dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '#')));
+        dropdown_menu.append($('<li>').append($('<a>').text('Move to').addClass('dropdown-item').attr('href', '#')));
+        dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '#')));
+        dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '#')));
+
+        td_dropdown.append(dropdown_menu);
+        tr.append(td_dropdown);
     }
 
 });
