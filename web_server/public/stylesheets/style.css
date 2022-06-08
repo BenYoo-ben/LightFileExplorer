@@ -54,6 +54,10 @@ td.dropdown {
     height: 100%;
 }
 
+.toast {
+    --bs-toast-max-width: 200px;
+}
+
 @media (max-width: 767.98px) {
     .auth {
         display: none;

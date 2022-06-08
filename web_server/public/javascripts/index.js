@@ -1,5 +1,10 @@
 const currentUrl = window.location.href;
 
+let move_src = sessionStorage.getItem('move_src');
+let file_name = sessionStorage.getItem('file_name');
+console.log(move_src);
+console.log(file_name);
+
 $(function () {
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
@@ -101,10 +106,21 @@ $(function () {
         }
 
         // Buttons for later purposes
-        dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '#')));
-        dropdown_menu.append($('<li>').append($('<a>').text('Move to').addClass('dropdown-item').attr('href', '#')));
-        dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '#')));
-        dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '#')));
+        dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
+        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
+        dropdown_menu.append(li_move);
+        if (json[i]['is_dir'] === '0') {
+            li_move.click(() => {
+                const toast = new bootstrap.Toast($('#toast'));
+                const decoded = decodeURIComponent(currentUrl);
+                $('.toast-body').text('Move ' + json[i]['name']);
+                toast.show();
+                sessionStorage.setItem('move_src', decoded + '/' + json[i]['name']);
+                sessionStorage.setItem('file_name', json[i]['name']);
+            });
+        }
+        dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
+        dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
 
         td_dropdown.append(dropdown_menu);
         tr.append(td_dropdown);
