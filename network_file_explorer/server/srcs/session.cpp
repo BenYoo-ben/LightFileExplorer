@@ -329,6 +329,7 @@ int session_object::handle_request(char type,
                 }
 
                 fclose(file);
+                lock->remove_lock(lock->HARD_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
                 return -1;
