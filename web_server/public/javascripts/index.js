@@ -116,19 +116,19 @@ $(function () {
             <img src="/images/three-dots-vertical.svg" alt="dropdown"/>
         </a>`);
         let dropdown_menu = $(`<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1"></ul>`);
+        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
 
-        // Download files for file only
         if (json[i]['is_dir'] === '0') {
             const encoded = encodeURIComponent('/' + json[i]['name']);
-            let url = currentUrl + encoded + '/download';
-            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', url)));
-        }
+            let download_url = currentUrl + encoded + '/download';
+            let delete_url = currentUrl + encoded + '/delete';
 
-        // Buttons for later purposes
-        dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
-        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
-        dropdown_menu.append(li_move);
-        if (json[i]['is_dir'] === '0') {
+            // Download a file
+            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', download_url)));
+
+            // Delete a file
+            dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', delete_url)));
+
             li_move.click(() => {
                 const toast = new bootstrap.Toast($('#toast'));
                 const decoded = decodeURIComponent(currentUrl);
@@ -137,7 +137,12 @@ $(function () {
                 sessionStorage.setItem('move_src', decoded + '/' + json[i]['name']);
                 sessionStorage.setItem('file_name', json[i]['name']);
             });
+        } else {
+            dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
         }
+
+        dropdown_menu.append(li_move);
+        // Buttons for later purposes
         dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
         dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
 
