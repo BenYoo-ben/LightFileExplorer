@@ -1,10 +1,9 @@
 #include "file_scouter.hpp"
 
-std::vector<std::string> file_manager::files_in_directory_to_vector
-    (std::string string_dir_name) {
+int file_manager::files_in_directory_to_vector(std::string string_dir_name, std::vector<std::string> *vStr) {
     const char *dir_name = string_dir_name.c_str();
 
-    std::vector<std::string> file_names;
+    std::vector<std::string> &file_names = *vStr;
 
     DIR *dir;
     struct dirent *ent;
@@ -18,18 +17,16 @@ std::vector<std::string> file_manager::files_in_directory_to_vector
         }
         closedir(dir);
     } else {
-  // could not open directory
-        perror(":ERROR");
+        // could not open directory
+        perror("opendir failure");
+        return -1;
     }
-    return file_names;
+    return 0;
 }
 
-struct stat file_manager::get_stat_of_file(std::string file_name) {
+int file_manager::get_stat_of_file(std::string file_name, struct stat *st) {
     const char *file_name_in_char_array = file_name.c_str();
-
-    struct stat status;
-    lstat(file_name_in_char_array, &status);
-    return status;
+    return lstat(file_name_in_char_array, st);
 }
 
 std::string file_manager::stat_get_type(struct stat *st) {

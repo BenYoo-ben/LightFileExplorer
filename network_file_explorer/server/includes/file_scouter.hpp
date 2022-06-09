@@ -15,10 +15,9 @@
 class file_manager{
  private:
  public:
-std::vector<std::string>
-    files_in_directory_to_vector(std::string string_dir_name);
+int files_in_directory_to_vector(std::string string_dir_name, std::vector<std::string> *vStr);
 
-struct stat get_stat_of_file(std::string file_name);
+int get_stat_of_file(std::string file_name, struct stat *st);
 
 std::string stat_get_type(struct stat *st);
 

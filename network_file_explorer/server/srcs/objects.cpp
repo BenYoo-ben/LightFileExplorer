@@ -53,24 +53,37 @@ directory_object::directory_object(std::vector<std::vector<file_object>> parsed_
     this->directory_path = directory_path;
 }
 
-std::vector<std::vector<file_object>> directory_object::get_vectors() {
-    return dir;
+int directory_object::get_vectors(std::vector<std::vector<file_object>> *vvfObjPtr) {
+    *vvfObjPtr = dir;
+    return 0;
 }
 
 std::string directory_object::get_directory_path() {
     return directory_path;
 }
 
-std::vector<file_object> json_handler::directory_to_file_object_vector
-(std::string dir_name) {
-    std::vector<file_object> file_objects;
+int json_handler::directory_to_file_object_vector
+(std::string dir_name ,std::vector<file_object> *vfObjPtr) {
+    std::vector<file_object> &file_objects = *vfObjPtr;
 
     file_manager fm;
-    std::vector<std::string> file_names =
-        fm.files_in_directory_to_vector(dir_name);
+    std::vector<std::string> file_names;
+    
+    int ret = fm.files_in_directory_to_vector(dir_name, &file_names);
+    if (ret < 0) {
+        perror("get file names failure");
+        return -1;
+    }
 
     for (std::string s : file_names) {
-        struct stat status = fm.get_stat_of_file(dir_name+"/"+s);
+        struct stat status;
+        int statRet = fm.get_stat_of_file(dir_name+"/" + s, &status);
+        if (statRet < 0) {
+            perror("get stat failure");
+            return -1;
+        }
+    
+
         file_object fo(
                 s,
                 fm.stat_get_time(&status),
@@ -81,12 +94,20 @@ std::vector<file_object> json_handler::directory_to_file_object_vector
         file_objects.push_back(fo);
     }
 
-    return file_objects;
+    return 0;
 }
 
-Json::Value json_handler::make_json_object(std::string dir_name, int depth) {
-    std::vector<file_object> basic_files = directory_to_file_object_vector(dir_name);
+int json_handler::make_json_object(std::string dir_name, int depth, Json::Value *jvPtr) {
+    std::vector<file_object> basic_files; 
+    
+    int ret = directory_to_file_object_vector(dir_name, &basic_files);
+    
+    if (ret < 0) {
+        perror("Dir to File Vector failure");
+        return -1;
+    }
 
+    Json::Value &root = *jvPtr;
     if (depth == 2) {
         std::vector<std::vector<file_object>> data;
 
@@ -95,7 +116,15 @@ Json::Value json_handler::make_json_object(std::string dir_name, int depth) {
 
             if (s.get_is_dir()) {
                 elem.push_back(s);
-                std::vector<file_object> files_in_directory = directory_to_file_object_vector(dir_name + s.get_name());
+                std::vector<file_object> files_in_directory;
+                
+                int retfObjToVect= directory_to_file_object_vector(dir_name + s.get_name(), &files_in_directory);
+                
+                if (retfObjToVect < 0) {
+                    perror("Dir to File Vector failure 2");
+                    return -1;
+                }
+
                 elem.insert(elem.end(),
                         files_in_directory.begin(),
                         files_in_directory.end());
@@ -107,7 +136,6 @@ Json::Value json_handler::make_json_object(std::string dir_name, int depth) {
             elem.clear();
         }
         std::cout << data.size() <<std::endl;
-        Json::Value root(Json::arrayValue);
 
         for (std::vector<file_object> inner_vector : data) {
             if (inner_vector.size() > 1) {
@@ -142,9 +170,8 @@ Json::Value json_handler::make_json_object(std::string dir_name, int depth) {
             }
         }
 
-        return root;
+        return 0;;
     } else if (depth == 1) {
-        Json::Value root(Json::arrayValue);
 
         for (file_object s : basic_files) {
             Json::Value elem;
@@ -158,10 +185,10 @@ Json::Value json_handler::make_json_object(std::string dir_name, int depth) {
             root.append(elem);
         }
 
-        return root;
+        return 0;
     } else {
         perror("Unknown depth ! \n");
-        return Json::Value(Json::arrayValue);
+        return -1;
     }
 }
 

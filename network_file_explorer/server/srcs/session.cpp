@@ -28,7 +28,13 @@ int session_object::handle_request(char type,
             if (lock->check_lock(lock->HARD_LOCK, dir)) {
                 lock->add_lock(lock->SOFT_LOCK, dir);
 
-                Json::Value dir_json_object = jh.make_json_object(dir, 2);
+                Json::Value dir_json_object(Json::arrayValue);
+                int ret = jh.make_json_object(dir, 2, &dir_json_object);
+                if (ret < 0) {
+                    perror("make json object failure");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    return -1;
+                }
 
                 std::string json_str = dir_json_object.toStyledString();
 
@@ -74,7 +80,15 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->SOFT_LOCK, full_file);
 
                 file_manager fm;
-                struct stat file_stat = fm.get_stat_of_file(full_file.c_str());
+                struct stat file_stat; 
+                
+                int fRet = fm.get_stat_of_file(full_file.c_str(), &file_stat);
+                if (fRet < 0) {
+                    fprintf(stderr, "get_stat_of_file failed for %s\n", full_file.c_str());
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+
                 int file_size = fm.stat_get_size(&file_stat);
                 const int kBufSize = 4 + file_size + 1;
 
@@ -228,7 +242,13 @@ int session_object::handle_request(char type,
             if (lock->check_lock(lock->HARD_LOCK, dir)) {
                 lock->add_lock(lock->SOFT_LOCK, dir);
 
-                Json::Value dir_json_object = jh.make_json_object(dir, 1);
+                Json::Value dir_json_object(Json::arrayValue);
+                int ret = jh.make_json_object(dir, 1, &dir_json_object);
+                if (ret < 0) {
+                    perror("make json object failure");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    return -1;
+                }
 
                 std::string json_str = dir_json_object.toStyledString();
 
@@ -290,6 +310,7 @@ int session_object::handle_request(char type,
                 uint32_t temp = 0;
                 memset(&temp, 0x00, sizeof(uint32_t));
                 size_t ret = write(c_sock, &temp, sizeof(uint32_t));
+                
                 if (ret != sizeof(uint32_t)) {
                     lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
@@ -297,6 +318,7 @@ int session_object::handle_request(char type,
                 }
 
                 ret = read(c_sock, &temp, sizeof(uint32_t));
+                
                 if (ret != sizeof(uint32_t)) {
                     lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
@@ -329,6 +351,7 @@ int session_object::handle_request(char type,
                 }
 
                 fclose(file);
+                lock->remove_lock(lock->HARD_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
                 return -1;
