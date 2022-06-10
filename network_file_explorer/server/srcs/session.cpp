@@ -376,10 +376,9 @@ void *session_object::run() {
         bytes_read = 0;
 
         bytes_read = read(c_sock, buffer, global_expected_MTU);
-        if (bytes_read < 0) {
-            std::cerr << "Invalid Read" << std::endl;
-            close_socket();
-            return NULL;
+        if (bytes_read <= 0) {
+            perror("SocketReadERR");
+            break;
         } else if (bytes_read == 0) {
             // test if socket is open(without this check,
             // this thread tries to read to closd socket
@@ -392,6 +391,7 @@ void *session_object::run() {
                 std::cout<< "Socket Closed on Client Side ! \n" << std::endl;
                 break;
             } else {
+                std::cout << "Socket recvd EOF" << std::endl;
                 continue;
             }
         } else {
