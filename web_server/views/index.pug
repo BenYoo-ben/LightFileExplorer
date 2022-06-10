@@ -16,6 +16,14 @@ html(lang="en")
           span#nav-title LiFE
     .container-md
       nav#dir.fs-4
+      .dropdown.mb-1
+        button(type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside").btn.dropdown-toggle
+          img(src="/images/upload.svg" alt="upload").me-2
+          |Upload
+        form(method="post" enctype="multipart/form-data")#upload.dropdown-menu.p-0
+          .d-inline-flex
+            input(type="file" name="fileUploaded").form-control
+            button(type="submit").btn.btn-light Submit
       table.table.table-bordered.text-center.table-hover.align-middle
     .toast-container.position-fixed.bottom-0.end-0.p-3
       #toast.toast.align-items-center

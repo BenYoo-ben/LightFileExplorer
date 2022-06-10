@@ -7,8 +7,8 @@ a {
 }
 
 #dir {
-    margin-top: 30px;
-    margin-bottom: 30px;
+    margin-top: 60px;
+    margin-bottom: 15px;
     --bs-breadcrumb-divider: '>';
 }
 
@@ -31,6 +31,10 @@ a {
     font-style: italic;
 }
 
+.dropdown-toggle::after {
+    margin-left: 0.5rem;
+}
+
 td.icon,
 td.dropdown > a {
     padding-left: 0;
@@ -41,7 +45,7 @@ td.dropdown {
     padding: 0;
 }
 
-.dropdown-toggle::after {
+td a.dropdown-toggle::after {
     display: none;
 }
 

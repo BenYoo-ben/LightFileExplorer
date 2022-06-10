@@ -1,29 +1,12 @@
 const currentUrl = window.location.href;
 
-let move_src = sessionStorage.getItem('move_src');
-let file_name = sessionStorage.getItem('file_name');
-console.log(move_src);
-console.log(file_name);
-
-// for upload UI, dynamically make UI
-var uploadForm = document.createElement('form');
-uploadForm.setAttribute('method', 'post');
-uploadForm.setAttribute('action', currentUrl + '/upload');
-uploadForm.setAttribute('enctype', 'multipart/form-data');
-uploadForm.setAttribute('style', 'margin: 2% 5%;');
-
-var uploadGetFile = document.createElement('input');
-var uploadButton = document.createElement('input');
-uploadGetFile.setAttribute('type', 'file');
-uploadGetFile.setAttribute('name', 'fileUploaded');
-
-uploadButton.setAttribute('type', 'image');
-uploadButton.setAttribute('src', '/images/cloud-upload.svg');
-uploadForm.appendChild(uploadGetFile);
-uploadForm.appendChild(uploadButton);
+// let move_src = sessionStorage.getItem('move_src');
+// let file_name = sessionStorage.getItem('file_name');
+// console.log(move_src);
+// console.log(file_name);
 
 $(function () {
-    document.body.append(uploadForm);
+    $('#upload').attr('action', currentUrl + '/upload');
 
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
@@ -112,11 +95,12 @@ $(function () {
         let td_dropdown = $('<td>');
         td_dropdown.addClass('dropdown');
         td_dropdown.html(`
-        <a class="btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="btn dropdown-toggle rounded-0" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
             <img src="/images/three-dots-vertical.svg" alt="dropdown"/>
         </a>`);
         let dropdown_menu = $(`<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1"></ul>`);
         let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
+        let li_delete = $('<li>').append($('<button>').text('Delete').addClass('dropdown-item').attr('type', 'button'));
 
         if (json[i]['is_dir'] === '0') {
             const encoded = encodeURIComponent('/' + json[i]['name']);
@@ -127,7 +111,15 @@ $(function () {
             dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', download_url)));
 
             // Delete a file
-            dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', delete_url)));
+            li_delete.click(() => {
+                $.ajax({
+                    url: delete_url,
+                    method: 'DELETE',
+                    dataType: 'text',
+                }).done(() => {
+                    location.reload();
+                });
+            });
 
             li_move.click(() => {
                 const toast = new bootstrap.Toast($('#toast'));
@@ -142,6 +134,7 @@ $(function () {
         }
 
         dropdown_menu.append(li_move);
+        dropdown_menu.append(li_delete);
         // Buttons for later purposes
         dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
         dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));

@@ -50,7 +50,8 @@ router.get('/:dir/download', async (req, res, next) => {
     }
 });
 
-router.get('/:dir/delete', async (req, res, next) => {
+// Delete Method
+router.delete('/:dir/delete', async (req, res, next) => {
     try {
         let dir = req.params.dir;
         let redirect_dir = encodeURIComponent(path.dirname(dir));
@@ -59,8 +60,8 @@ router.get('/:dir/delete', async (req, res, next) => {
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let msg = await client.delete_file('/' + req_dir, file);
         console.log(msg);
-        res.redirect('/' + redirect_dir);
         client.socket.destroy();
+        res.status(200).end();
     } catch (err) {
         console.log(err);
         client.socket.destroy();
