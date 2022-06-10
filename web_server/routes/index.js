@@ -69,8 +69,6 @@ router.delete('/:dir/delete', async (req, res, next) => {
 });
 
 // File Upload Route
-var fileupload = require('express-fileupload');
-router.use(fileupload());
 router.post('/:dir/upload', (req, res, next) => {
     let dir = req.params.dir;
     let redirect_dir = encodeURIComponent(dir);
