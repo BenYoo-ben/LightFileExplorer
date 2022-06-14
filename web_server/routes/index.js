@@ -39,7 +39,7 @@ router.get('/:dir/download', async (req, res, next) => {
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let file = await client.download_file('/' + req_dir, file_name);
         res.writeHead(200, {
-            'Content-disposition': 'attachment;filename=' + file_name,
+            'Content-disposition': 'attachment;filename=' + decodeURI(file_name),
             'Content-Length': file.length,
         });
         res.end(file);
@@ -73,13 +73,9 @@ router.post('/:dir/upload', (req, res, next) => {
     let dir = req.params.dir;
     let redirect_dir = encodeURIComponent(dir);
     let req_dir = dir + '/';
+    let file = req.files.fileUploaded;
 
-    if (!req.files) {
-        res.send('File was not found');
-        return;
-    }
-
-    var file = req.files.fileUploaded;
+    file.name = encodeURI(file.name);
     console.log('File Uploaded ! ');
     file.mv('uploads/' + file.name, async (err) => {
         if (err) {

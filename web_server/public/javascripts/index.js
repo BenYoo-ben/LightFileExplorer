@@ -8,6 +8,14 @@ const currentUrl = window.location.href;
 $(function () {
     $('#upload').attr('action', currentUrl + '/upload');
 
+    // Check if file is empty
+    $('#fileSubmit').click(() => {
+        if ($('#fileInput').val() === '') {
+            event.preventDefault();
+            alert('File not selected');
+        }
+    });
+
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
     let url = '/';
@@ -85,7 +93,7 @@ $(function () {
             tr.append(td_icon);
 
             // File name, modified time, size
-            tr.append($('<td>').text(json[i]['name']).addClass('name'));
+            tr.append($('<td>').text(decodeURI(json[i]['name'])).addClass('name'));
             tr.append($('<td>').text(json[i]['time']).addClass('time'));
             tr.append($('<td>').text(json[i]['size']).addClass('size'));
         }
