@@ -29,7 +29,7 @@ router.get('/:dir', async (req, res, next) => {
 });
 
 // Download File
-router.get('/:dir/download', async (req, res, next) => {
+/*router.get('/:dir/download', async (req, res, next) => {
     let dir = req.params.dir;
     let decoded = decodeURIComponent(dir);
     let req_dir = path.dirname(decoded) + '/';
@@ -40,8 +40,40 @@ router.get('/:dir/download', async (req, res, next) => {
         'Content-disposition': 'attachment;filename=' + decoded,
         'Content-Length': file.length,
     });
+
     res.end(file);
     client.socket.destroy();
+});*/
+router.get('/:dir/download', async (req, res, next) => {
+    let dir = req.params.dir;
+    let decoded = decodeURIComponent(dir);
+    let req_dir = path.dirname(decoded) + '/';
+    decoded = decoded.replace(req_dir, '');
+    let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+    let fileSize = await client.download_file_get_size('/' + req_dir, decoded);
+    
+    let retVal = await client.download_file('/' + req_dir, decoded, fileSize);
+
+    if (retVal == 0) {
+        console.log("Download Start...");
+        res.download("./downloads/" + decoded, (err) => {
+            if (err) {
+                console.log(err);
+            }
+            client.socket.destroy();
+            fs.unlink("./downloads/" + decoded, function(err) {
+                if (err && err.code == 'ENOENT') {
+                   console.log("File Unlink Err: File Does not Exist");
+                } else if (err) {
+                    console.log("File Unlink Err: Other");
+                }
+            });
+            console.log("Download Done... ! ");
+        });
+    } else {
+        console.log("retVal != 0, ERR! \n");
+        client.socket.destroy();
+    }
 });
 
 // File Upload Route
@@ -76,12 +108,23 @@ router.post('/:dir/upload', (req, res, next) => {
         if (retVal == 0) {
             console.log('Upload Process Success');
             client.socket.destroy();
+            fs.unlink('uploads/' + file.name, function(err) {
+                if (err && err.code == 'ENOENT') {
+                    console.log("File Unlink Err: File Does not Exist");
+                } else if (err) {
+                    console.log("File Unlink Err: Other");
+                }
+            });
+
             res.redirect('/' + req.params.dir);
+
         } else {
             console.log('Upload Process Failed');
             client.socket.destroy();
         }
     });
+
+
 });
 
 module.exports = router;

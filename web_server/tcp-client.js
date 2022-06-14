@@ -61,13 +61,12 @@ class TCPClient {
         });
     }
 
-    // Download a file
-    // ex) download_file('/home/', 'test');
-    download_file(dir, file) {
+
+    download_file_get_size(dir ,file) {
         return new Promise((resolve, reject) => {
+
             let dir_size = dir.length;
             let file_size = file.length;
-            let recvData = [];
             let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
             buf.writeInt8(1, 0);
             buf.writeInt32LE(dir_size, 1);
@@ -78,24 +77,74 @@ class TCPClient {
             for (let i = 0; i < file_size; i++) {
                 buf.writeInt8(file[i].charCodeAt(0), i + 9 + dir_size);
             }
+
+            let fTotalSize = -1;
+
             this.socket.write(buf);
 
             this.socket.on('data', function (data) {
-                recvData.push(data);
-                let data_size = recvData[0].slice(0, 4);
-                data_size = data_size.readInt32LE(0);
-                if (data_size == 0) {
-                    recvData.pop();
+                let fTotalSize = data.slice(0, 4);
+                fTotalSize = fTotalSize.readInt32LE(0);
+
+                if (fTotalSize < 0) {
+                    reject("Not wanted file Size");
+                } else {
+                    resolve(fTotalSize);
                 }
-                if (recvData.length > 1) {
-                    recvData[0] = Buffer.concat([recvData[0], recvData[1]]);
-                    recvData.pop();
-                }
-                if (recvData.length && data_size + 4 == recvData[0].length) {
-                    let file = recvData[0].slice(4);
-                    recvData.pop();
-                    resolve(file);
-                }
+            });
+        });
+    }
+    // Download a file
+    // ex) download_file('/home/', 'test');
+    download_file(dir, file, fileSize) {
+        return new Promise((resolve, reject) => {
+                        
+            let fProcessedSize = 0;
+            
+            let fileName = 'downloads/' + file;
+
+            let buf = new Buffer.alloc(4);
+            buf.writeInt32LE(0);
+            console.log(fileName);
+
+            this.socket.write(buf);
+
+            console.log("Sent ACK : " + buf);
+
+            let writeSeq = 0; 
+            this.socket.on('data', function (data) {
+                fProcessedSize += data.length;
+
+                if (writeSeq == 0) {
+                    /*fs.writeFile(fileName, data, (err) => {
+                        if (err) {
+                            console.log(err);
+                            throw err;
+                        }     
+                        console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nwritten to " + fileName);
+                
+                    });*/
+                    fs.writeFileSync(fileName, data);
+                    console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nwritten to " + fileName);
+
+                    writeSeq++;
+                } else {
+/*                     fs.appendFile(fileName, data, (err) => {
+                        if (err) {
+                            console.log(err);
+                            throw err;
+                        }     
+                        console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nappended to " + fileName);
+                
+                    });             */
+                    fs.appendFileSync(fileName, data);
+                    console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nappended to " + fileName);
+
+                } 
+                if (fProcessedSize  >= fileSize) {
+                    console.log("fProcess is Done ! "); 
+                    resolve(0);
+                } 
             });
         });
     }

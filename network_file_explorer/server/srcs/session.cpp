@@ -53,7 +53,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %lu\n", json_str.length());
+                printf("JSON_STR LEN: %u\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) -4,
                         "%s", json_str.c_str());
@@ -89,9 +89,8 @@ int session_object::handle_request(char type,
                     return -1;
                 }
 
-                int file_size = fm.stat_get_size(&file_stat);
-                const int kBufSize = 4 + file_size + 1;
-
+                uint32_t fTotalSize = fm.stat_get_size(&file_stat);
+/*
                 // can't send file larger than memory size this way
                 char send_buffer[kBufSize];
 
@@ -113,8 +112,58 @@ int session_object::handle_request(char type,
                         return -1;
                     }
                     close(fd);
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);*/
+
+
+                if (write(c_sock, &fTotalSize, sizeof(uint32_t)) != sizeof(uint32_t)) {
+                    perror("Writing File Size Failed");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+
+                uint32_t ackVal = -1;
+
+                if (read(c_sock, &ackVal, sizeof(uint32_t)) < 0) {
+                    perror("Getting File Size Ack failed");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+
+                if (ackVal != 0) {
+                    perror("Recvd File Size ack is not 0");
                     lock->remove_lock(lock->SOFT_LOCK, full_file);
                 }
+
+                int fileFd = open(full_file.c_str(), O_RDONLY);
+
+                char sendBuffer[global_window_size];
+
+                uint32_t fSum = 0;
+                ssize_t readBytes = -1;
+                while (fSum < fTotalSize) {
+                    readBytes = read(fileFd, sendBuffer, global_window_size);
+
+                    if (readBytes <= 0) {
+                        perror("READ FAILED WHILE READING FILE");
+                        lock->remove_lock(lock->SOFT_LOCK, full_file);
+                        close(fileFd);
+                        return -1;
+                   
+                    }
+
+                   fSum += readBytes;
+
+                   printf("Written [%u / %u]\n", fSum, fTotalSize);
+
+                   if (write(c_sock, sendBuffer, readBytes) != readBytes) {
+                       perror("WRITE FAILED ON STREAM(download)");
+                       lock->remove_lock(lock->SOFT_LOCK, full_file);
+                       close(fileFd);
+                       return -1;
+                   }
+                }
+                close(fileFd);
+                lock->remove_lock(lock->SOFT_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
                 return -1;
@@ -267,7 +316,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %lu\n", json_str.length());
+                printf("JSON_STR LEN: %u\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) - 4,
                         "%s", json_str.c_str());
