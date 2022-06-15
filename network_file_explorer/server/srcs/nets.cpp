@@ -13,13 +13,13 @@ int server_object::server_socket_init() {
     return 0;
 }
 
-int server_object::server_socket_bind() {
+int server_object::server_socket_bind(uint16_t sPort) {
     struct sockaddr_in server_address;
 
     memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_address.sin_port = htons(global_server_port);
+    server_address.sin_port = htons(sPort);
 
     printf("s_sock : %d\n", s_sock);
     int ret = bind(s_sock, (struct sockaddr *) &server_address,
