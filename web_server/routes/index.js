@@ -39,23 +39,23 @@ router.get('/:dir/download', async (req, res, next) => {
         decoded = decoded.replace(req_dir, '');
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let fileSize = await client.download_file_get_size('/' + req_dir, decoded);
-    
-        let retVal = await client.download_file('/' + req_dir, decoded, fileSize);
 
-        console.log("Download Start...");
-        res.download("./downloads/" + decoded, (err) => {
+        await client.download_file('/' + req_dir, decoded, fileSize);
+
+        console.log('Download Start...');
+        res.download('./downloads/' + decoded, (err) => {
             if (err) {
                 console.log(err);
             }
             client.socket.destroy();
-            fs.unlink("./downloads/" + decoded, (err) => {
+            fs.unlink('./downloads/' + decoded, (err) => {
                 if (err && err.code == 'ENOENT') {
-                   console.log("File Unlink Err: File Does not Exist");
+                    console.log('File Unlink Err: File Does not Exist');
                 } else if (err) {
-                    console.log("File Unlink Err: Other");
+                    console.log('File Unlink Err: Other');
                 }
             });
-            console.log("Download Done... ! ");
+            console.log('Download Done... ! ');
         });
     } catch (err) {
         console.log(err);
@@ -99,11 +99,11 @@ router.post('/:dir/upload', (req, res, next) => {
             let msg = await client.upload_file('/' + req_dir, file.name);
             console.log(msg);
             client.socket.destroy();
-            fs.unlink('uploads/' + file.name, function(err) {
+            fs.unlink('uploads/' + file.name, function (err) {
                 if (err && err.code == 'ENOENT') {
-                    console.log("File Unlink Err: File Does not Exist");
+                    console.log('File Unlink Err: File Does not Exist');
                 } else if (err) {
-                    console.log("File Unlink Err: Other");
+                    console.log('File Unlink Err: Other');
                 }
             });
             res.redirect('/' + req.params.dir);
@@ -112,8 +112,6 @@ router.post('/:dir/upload', (req, res, next) => {
             client.socket.destroy();
         }
     });
-
-
 });
 
 // File Move Route

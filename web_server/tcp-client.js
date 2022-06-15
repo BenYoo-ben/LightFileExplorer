@@ -64,10 +64,8 @@ class TCPClient {
         });
     }
 
-
-    download_file_get_size(dir ,file) {
+    download_file_get_size(dir, file) {
         return new Promise((resolve, reject) => {
-
             let dir_size = dir.length;
             let file_size = file.length;
             let buf = new Buffer.alloc(1 + 4 + dir_size + 4 + file_size);
@@ -90,7 +88,7 @@ class TCPClient {
                 fTotalSize = fTotalSize.readInt32LE(0);
 
                 if (fTotalSize < 0) {
-                    reject("Not wanted file Size");
+                    reject('Not wanted file Size');
                 } else {
                     resolve(fTotalSize);
                 }
@@ -101,9 +99,8 @@ class TCPClient {
     // ex) download_file('/home/', 'test');
     download_file(dir, file, fileSize) {
         return new Promise((resolve, reject) => {
-                        
             let fProcessedSize = 0;
-            
+
             let fileName = 'downloads/' + file;
 
             let buf = new Buffer.alloc(4);
@@ -112,42 +109,24 @@ class TCPClient {
 
             this.socket.write(buf);
 
-            console.log("Sent ACK : " + buf);
+            console.log('Sent ACK : ' + buf);
 
-            let writeSeq = 0; 
+            let writeSeq = 0;
             this.socket.on('data', function (data) {
                 fProcessedSize += data.length;
 
                 if (writeSeq == 0) {
-                    /*fs.writeFile(fileName, data, (err) => {
-                        if (err) {
-                            console.log(err);
-                            throw err;
-                        }     
-                        console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nwritten to " + fileName);
-                
-                    });*/
                     fs.writeFileSync(fileName, data);
-                    console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nwritten to " + fileName);
-
+                    console.log('[' + fProcessedSize + '/' + fileSize + ']' + '\nwritten to ' + fileName);
                     writeSeq++;
                 } else {
-/*                     fs.appendFile(fileName, data, (err) => {
-                        if (err) {
-                            console.log(err);
-                            throw err;
-                        }     
-                        console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nappended to " + fileName);
-                
-                    });             */
                     fs.appendFileSync(fileName, data);
-                    console.log("[" + fProcessedSize + "/" + fileSize + "]" +"\nappended to " + fileName);
-
-                } 
-                if (fProcessedSize  >= fileSize) {
-                    console.log("fProcess is Done ! "); 
+                    console.log('[' + fProcessedSize + '/' + fileSize + ']' + '\nappended to ' + fileName);
+                }
+                if (fProcessedSize >= fileSize) {
+                    console.log('fProcess is Done ! ');
                     resolve(0);
-                } 
+                }
             });
         });
     }
