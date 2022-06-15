@@ -1,9 +1,5 @@
 const currentUrl = window.location.href;
-
-// let move_src = sessionStorage.getItem('move_src');
-// let file_name = sessionStorage.getItem('file_name');
-// console.log(move_src);
-// console.log(file_name);
+const currentPath = window.location.pathname;
 
 $(function () {
     $('#upload').attr('action', currentUrl + '/upload');
@@ -15,6 +11,34 @@ $(function () {
             alert('File not selected');
         }
     });
+
+    // Move Button
+    let move_flag = sessionStorage.getItem('move_flag');
+    if (move_flag === null) {
+        $('#move_btn').hide();
+    } else if (move_flag === 'true') {
+        let move_src = sessionStorage.getItem('move_src');
+        let move_name = sessionStorage.getItem('move_name');
+        console.log(move_src);
+        console.log(move_name);
+        $('#move_btn').click(() => {
+            $.ajax({
+                url: currentUrl + move_src + '/move',
+                method: 'PUT',
+                dataType: 'text',
+            })
+                .done(() => {
+                    alert('Moved ' + move_name);
+                    sessionStorage.removeItem('move_flag');
+                    sessionStorage.removeItem('move_src');
+                    sessionStorage.removeItem('move_name');
+                    location.reload();
+                })
+                .fail(() => {
+                    alert('Move failed ' + move_name);
+                });
+        });
+    }
 
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
@@ -93,7 +117,7 @@ $(function () {
             tr.append(td_icon);
 
             // File name, modified time, size
-            tr.append($('<td>').text(decodeURI(json[i]['name'])).addClass('name'));
+            tr.append($('<td>').text(json[i]['name']).addClass('name'));
             tr.append($('<td>').text(json[i]['time']).addClass('time'));
             tr.append($('<td>').text(json[i]['size']).addClass('size'));
         }
@@ -131,11 +155,12 @@ $(function () {
 
             li_move.click(() => {
                 const toast = new bootstrap.Toast($('#toast'));
-                const decoded = decodeURIComponent(currentUrl);
                 $('.toast-body').text('Move ' + json[i]['name']);
                 toast.show();
-                sessionStorage.setItem('move_src', decoded + '/' + json[i]['name']);
-                sessionStorage.setItem('file_name', json[i]['name']);
+                $('#move_btn').show('fast');
+                sessionStorage.setItem('move_flag', true);
+                sessionStorage.setItem('move_src', currentPath + '%2F' + decodeURI(json[i]['name']));
+                sessionStorage.setItem('move_name', json[i]['name']);
             });
         } else {
             dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));

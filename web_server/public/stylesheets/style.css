@@ -22,6 +22,16 @@ a {
     font-weight: bold;
 }
 
+#upload {
+    --bs-dropdown-min-width: 25rem;
+}
+
+#move_btn::before {
+    content: '+';
+    margin-right: 10px;
+    font-weight: bold;
+}
+
 #logo {
     margin-right: 20px;
 }
@@ -31,9 +41,9 @@ a {
     font-style: italic;
 }
 
-.dropdown-toggle::after {
+/* .dropdown-toggle::after {
     margin-left: 0.5rem;
-}
+} */
 
 td.icon,
 td.dropdown > a {
@@ -49,7 +59,7 @@ td a.dropdown-toggle::after {
     display: none;
 }
 
-.dropdown-menu {
+td.dropdown > ul.dropdown-menu {
     min-width: 0;
 }
 

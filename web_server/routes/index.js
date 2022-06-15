@@ -54,7 +54,6 @@ router.get('/:dir/download', async (req, res, next) => {
 router.delete('/:dir/delete', async (req, res, next) => {
     try {
         let dir = req.params.dir;
-        let redirect_dir = encodeURIComponent(path.dirname(dir));
         let req_dir = path.dirname(dir) + '/';
         let file = dir.replace(req_dir, '');
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
@@ -75,7 +74,6 @@ router.post('/:dir/upload', (req, res, next) => {
     let req_dir = dir + '/';
     let file = req.files.fileUploaded;
 
-    file.name = encodeURI(file.name);
     console.log('File Uploaded ! ');
     file.mv('uploads/' + file.name, async (err) => {
         if (err) {
@@ -94,6 +92,22 @@ router.post('/:dir/upload', (req, res, next) => {
             client.socket.destroy();
         }
     });
+});
+
+// File Move Route
+router.put('/:dst/:src/move', async (req, res, next) => {
+    try {
+        const src_dir = '/' + req.params.src;
+        const dst_dir = '/' + req.params.dst + req.params.src.replace(path.dirname(req.params.src), '');
+        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        let msg = await client.move_file(src_dir, dst_dir);
+        console.log(msg);
+        client.socket.destroy();
+        res.status(200).end();
+    } catch (err) {
+        console.log(err);
+        client.socket.destroy();
+    }
 });
 
 module.exports = router;
