@@ -1,29 +1,44 @@
 const currentUrl = window.location.href;
-
-let move_src = sessionStorage.getItem('move_src');
-let file_name = sessionStorage.getItem('file_name');
-console.log(move_src);
-console.log(file_name);
-
-// for upload UI, dynamically make UI
-var uploadForm = document.createElement('form');
-uploadForm.setAttribute('method', 'post');
-uploadForm.setAttribute('action', currentUrl + '/upload');
-uploadForm.setAttribute('enctype', 'multipart/form-data');
-uploadForm.setAttribute('style', 'margin: 2% 5%;');
-
-var uploadGetFile = document.createElement('input');
-var uploadButton = document.createElement('input');
-uploadGetFile.setAttribute('type', 'file');
-uploadGetFile.setAttribute('name', 'fileUploaded');
-
-uploadButton.setAttribute('type', 'image');
-uploadButton.setAttribute('src', '/images/cloud-upload.svg');
-uploadForm.appendChild(uploadGetFile);
-uploadForm.appendChild(uploadButton);
+const currentPath = window.location.pathname;
 
 $(function () {
-    document.body.append(uploadForm);
+    $('#upload').attr('action', currentUrl + '/upload');
+
+    // Check if file is empty
+    $('#fileSubmit').click(() => {
+        if ($('#fileInput').val() === '') {
+            event.preventDefault();
+            alert('File not selected');
+        }
+    });
+
+    // Move Button
+    let move_flag = sessionStorage.getItem('move_flag');
+    if (move_flag === null) {
+        $('#move_btn').hide();
+    } else if (move_flag === 'true') {
+        let move_src = sessionStorage.getItem('move_src');
+        let move_name = sessionStorage.getItem('move_name');
+        console.log(move_src);
+        console.log(move_name);
+        $('#move_btn').click(() => {
+            $.ajax({
+                url: currentUrl + move_src + '/move',
+                method: 'PUT',
+                dataType: 'text',
+            })
+                .done(() => {
+                    alert('Moved ' + move_name);
+                    sessionStorage.removeItem('move_flag');
+                    sessionStorage.removeItem('move_src');
+                    sessionStorage.removeItem('move_name');
+                    location.reload();
+                })
+                .fail(() => {
+                    alert('Move failed ' + move_name);
+                });
+        });
+    }
 
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
@@ -112,32 +127,48 @@ $(function () {
         let td_dropdown = $('<td>');
         td_dropdown.addClass('dropdown');
         td_dropdown.html(`
-        <a class="btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+        <a class="btn dropdown-toggle rounded-0" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
             <img src="/images/three-dots-vertical.svg" alt="dropdown"/>
         </a>`);
         let dropdown_menu = $(`<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1"></ul>`);
+        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
+        let li_delete = $('<li>').append($('<button>').text('Delete').addClass('dropdown-item').attr('type', 'button'));
 
-        // Download files for file only
         if (json[i]['is_dir'] === '0') {
             const encoded = encodeURIComponent('/' + json[i]['name']);
-            let url = currentUrl + encoded + '/download';
-            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', url)));
-        }
+            let download_url = currentUrl + encoded + '/download';
+            let delete_url = currentUrl + encoded + '/delete';
 
-        // Buttons for later purposes
-        dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
-        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
-        dropdown_menu.append(li_move);
-        if (json[i]['is_dir'] === '0') {
+            // Download a file
+            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', download_url)));
+
+            // Delete a file
+            li_delete.click(() => {
+                $.ajax({
+                    url: delete_url,
+                    method: 'DELETE',
+                    dataType: 'text',
+                }).done(() => {
+                    location.reload();
+                });
+            });
+
             li_move.click(() => {
                 const toast = new bootstrap.Toast($('#toast'));
-                const decoded = decodeURIComponent(currentUrl);
                 $('.toast-body').text('Move ' + json[i]['name']);
                 toast.show();
-                sessionStorage.setItem('move_src', decoded + '/' + json[i]['name']);
-                sessionStorage.setItem('file_name', json[i]['name']);
+                $('#move_btn').show('fast');
+                sessionStorage.setItem('move_flag', true);
+                sessionStorage.setItem('move_src', currentPath + '%2F' + decodeURI(json[i]['name']));
+                sessionStorage.setItem('move_name', json[i]['name']);
             });
+        } else {
+            dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
         }
+
+        dropdown_menu.append(li_move);
+        dropdown_menu.append(li_delete);
+        // Buttons for later purposes
         dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
         dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
 
