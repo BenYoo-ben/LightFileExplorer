@@ -50,7 +50,7 @@ class directory_object {
     directory_object(std::vector<std::vector<file_object>> parsed_json,
                      std::string directory_path);
 
-    std::vector<std::vector<file_object>> get_vectors();
+    int get_vectors(std::vector<std::vector<file_object>> *vvfObjPtr);
 
     std::string get_directory_path();
 };
@@ -58,10 +58,9 @@ class directory_object {
 class json_handler{
  private:
  public:
-    Json::Value make_json_object(std::string dir_name, int depth);
+    int make_json_object(std::string dir_name, int depth, Json::Value *jsv);
 
-    std::vector<file_object> directory_to_file_object_vector
-                                         (std::string dir_name);
+    int directory_to_file_object_vector(std::string dir_name, std::vector<file_object> *vfObjPtr);
 };
 
 class lock_handler{

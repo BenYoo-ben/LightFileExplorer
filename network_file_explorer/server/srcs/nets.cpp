@@ -13,21 +13,20 @@ int server_object::server_socket_init() {
     return 0;
 }
 
-int server_object::server_socket_bind() {
+int server_object::server_socket_bind(uint16_t sPort) {
     struct sockaddr_in server_address;
 
     memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_address.sin_port = htons(global_server_port);
+    server_address.sin_port = htons(sPort);
 
-    printf("s_sock : %d\n", s_sock);
     int ret = bind(s_sock, (struct sockaddr *) &server_address,
                     sizeof(server_address));
 
     if (ret < 0) {
-        perror(":");
-        std::cout << "Socket Bind Fail" << std::endl;
+        close(s_sock);
+        perror("Socket Bind Fail");
         return -1;
     }
 
@@ -38,7 +37,8 @@ int server_object::server_socket_listen() {
     int ret = listen(s_sock, global_server_listen_maximum);
 
     if (ret < 0) {
-        std::cout << "Socket Listen Fail" << std::endl;
+        close(s_sock);
+        perror("Socket Listen Fail");
         return -1;
     }
     return 0;
@@ -62,7 +62,8 @@ void server_object::server_socket_start() {
 
         if (client_socket < 0) {
             std::cout << "Client Socket Accept Fail" << std::endl;
-            exit(1);
+            close(s_sock);
+            return;
         } else {
             std::cout << "Client Accepted" << std::endl;
             new session_object(client_socket, &lock);

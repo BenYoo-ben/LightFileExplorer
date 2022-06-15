@@ -28,7 +28,13 @@ int session_object::handle_request(char type,
             if (lock->check_lock(lock->HARD_LOCK, dir)) {
                 lock->add_lock(lock->SOFT_LOCK, dir);
 
-                Json::Value dir_json_object = jh.make_json_object(dir, 2);
+                Json::Value dir_json_object(Json::arrayValue);
+                int ret = jh.make_json_object(dir, 2, &dir_json_object);
+                if (ret < 0) {
+                    perror("make json object failure");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    return -1;
+                }
 
                 std::string json_str = dir_json_object.toStyledString();
 
@@ -47,7 +53,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %lu\n", json_str.length());
+                printf("JSON_STR LEN: %u\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) -4,
                         "%s", json_str.c_str());
@@ -74,10 +80,17 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->SOFT_LOCK, full_file);
 
                 file_manager fm;
-                struct stat file_stat = fm.get_stat_of_file(full_file.c_str());
-                int file_size = fm.stat_get_size(&file_stat);
-                const int kBufSize = 4 + file_size + 1;
+                struct stat file_stat; 
+                
+                int fRet = fm.get_stat_of_file(full_file.c_str(), &file_stat);
+                if (fRet < 0) {
+                    fprintf(stderr, "get_stat_of_file failed for %s\n", full_file.c_str());
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
 
+                uint32_t fTotalSize = fm.stat_get_size(&file_stat);
+/*
                 // can't send file larger than memory size this way
                 char send_buffer[kBufSize];
 
@@ -99,8 +112,58 @@ int session_object::handle_request(char type,
                         return -1;
                     }
                     close(fd);
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);*/
+
+
+                if (write(c_sock, &fTotalSize, sizeof(uint32_t)) != sizeof(uint32_t)) {
+                    perror("Writing File Size Failed");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+
+                uint32_t ackVal = -1;
+
+                if (read(c_sock, &ackVal, sizeof(uint32_t)) < 0) {
+                    perror("Getting File Size Ack failed");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+
+                if (ackVal != 0) {
+                    perror("Recvd File Size ack is not 0");
                     lock->remove_lock(lock->SOFT_LOCK, full_file);
                 }
+
+                int fileFd = open(full_file.c_str(), O_RDONLY);
+
+                char sendBuffer[global_window_size];
+
+                uint32_t fSum = 0;
+                ssize_t readBytes = -1;
+                while (fSum < fTotalSize) {
+                    readBytes = read(fileFd, sendBuffer, global_window_size);
+
+                    if (readBytes <= 0) {
+                        perror("READ FAILED WHILE READING FILE");
+                        lock->remove_lock(lock->SOFT_LOCK, full_file);
+                        close(fileFd);
+                        return -1;
+                   
+                    }
+
+                   fSum += readBytes;
+
+                   printf("Written [%u / %u]\n", fSum, fTotalSize);
+
+                   if (write(c_sock, sendBuffer, readBytes) != readBytes) {
+                       perror("WRITE FAILED ON STREAM(download)");
+                       lock->remove_lock(lock->SOFT_LOCK, full_file);
+                       close(fileFd);
+                       return -1;
+                   }
+                }
+                close(fileFd);
+                lock->remove_lock(lock->SOFT_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
                 return -1;
@@ -228,7 +291,13 @@ int session_object::handle_request(char type,
             if (lock->check_lock(lock->HARD_LOCK, dir)) {
                 lock->add_lock(lock->SOFT_LOCK, dir);
 
-                Json::Value dir_json_object = jh.make_json_object(dir, 1);
+                Json::Value dir_json_object(Json::arrayValue);
+                int ret = jh.make_json_object(dir, 1, &dir_json_object);
+                if (ret < 0) {
+                    perror("make json object failure");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    return -1;
+                }
 
                 std::string json_str = dir_json_object.toStyledString();
 
@@ -247,7 +316,7 @@ int session_object::handle_request(char type,
 
                 memcpy(send_buffer, &data_size, 4);
 
-                printf("JSON_STR LEN: %lu\n", json_str.length());
+                printf("JSON_STR LEN: %u\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) - 4,
                         "%s", json_str.c_str());
@@ -290,6 +359,7 @@ int session_object::handle_request(char type,
                 uint32_t temp = 0;
                 memset(&temp, 0x00, sizeof(uint32_t));
                 size_t ret = write(c_sock, &temp, sizeof(uint32_t));
+                
                 if (ret != sizeof(uint32_t)) {
                     lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
@@ -297,6 +367,7 @@ int session_object::handle_request(char type,
                 }
 
                 ret = read(c_sock, &temp, sizeof(uint32_t));
+                
                 if (ret != sizeof(uint32_t)) {
                     lock->remove_lock(lock->HARD_LOCK, full_file);
                     perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
@@ -354,10 +425,9 @@ void *session_object::run() {
         bytes_read = 0;
 
         bytes_read = read(c_sock, buffer, global_expected_MTU);
-        if (bytes_read < 0) {
-            std::cerr << "Invalid Read" << std::endl;
-            close_socket();
-            return NULL;
+        if (bytes_read <= 0) {
+            perror("SocketReadERR");
+            break;
         } else if (bytes_read == 0) {
             // test if socket is open(without this check,
             // this thread tries to read to closd socket
@@ -370,6 +440,7 @@ void *session_object::run() {
                 std::cout<< "Socket Closed on Client Side ! \n" << std::endl;
                 break;
             } else {
+                std::cout << "Socket recvd EOF" << std::endl;
                 continue;
             }
         } else {

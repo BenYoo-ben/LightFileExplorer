@@ -12,7 +12,7 @@ class server_object{
 
  public:
     int server_socket_init();
-    int server_socket_bind();
+    int server_socket_bind(uint16_t sPort);
     int server_socket_listen();
 
     void server_socket_start();
