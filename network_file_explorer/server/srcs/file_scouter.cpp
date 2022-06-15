@@ -34,18 +34,14 @@ std::string file_manager::stat_get_type(struct stat *st) {
         return std::string("Directory");
     } else if (S_ISREG(st->st_mode)) {
         return std::string("File");
-    } else if (S_ISSOCK(st->st_mode)) {
-        return std::string("Socket");
     } else if (S_ISCHR(st->st_mode)) {
         return std::string("Char Device");
-    } else if (S_ISFIFO(st->st_mode)) {
-        return std::string("FIFO");
     } else if (S_ISBLK(st->st_mode)) {
         return std::string("Block Device");
     } else if (S_ISLNK(st->st_mode)) {
         return std::string("Link");
     }
-    return NULL;
+    return "";
 }
 
 bool file_manager::stat_is_directory(struct stat *st) {
