@@ -83,7 +83,6 @@ router.delete('/:dir/delete', async (req, res, next) => {
 // File Upload Route
 router.post('/:dir/upload', (req, res, next) => {
     let dir = req.params.dir;
-    let redirect_dir = encodeURIComponent(dir);
     let req_dir = dir + '/';
     let file = req.files.fileUploaded;
 
@@ -121,6 +120,22 @@ router.put('/:dst/:src/move', async (req, res, next) => {
         const dst_dir = '/' + req.params.dst + req.params.src.replace(path.dirname(req.params.src), '');
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let msg = await client.move_file(src_dir, dst_dir);
+        console.log(msg);
+        client.socket.destroy();
+        res.status(200).end();
+    } catch (err) {
+        console.log(err);
+        client.socket.destroy();
+    }
+});
+
+// File Copy Route
+router.post('/:dst/:src/copy', async (req, res, next) => {
+    try {
+        const src_dir = '/' + req.params.src;
+        const dst_dir = '/' + req.params.dst + req.params.src.replace(path.dirname(req.params.src), '');
+        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        let msg = await client.copy_file(src_dir, dst_dir);
         console.log(msg);
         client.socket.destroy();
         res.status(200).end();

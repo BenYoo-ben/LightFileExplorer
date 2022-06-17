@@ -26,7 +26,13 @@ a {
     --bs-dropdown-min-width: 25rem;
 }
 
-#move_btn::before {
+#move_btn,
+#copy_btn {
+    display: none;
+}
+
+#move_btn::before,
+#copy_btn::before {
     content: '+';
     margin-right: 10px;
     font-weight: bold;
@@ -40,10 +46,6 @@ a {
     color: white;
     font-style: italic;
 }
-
-/* .dropdown-toggle::after {
-    margin-left: 0.5rem;
-} */
 
 td.icon,
 td.dropdown > a {
