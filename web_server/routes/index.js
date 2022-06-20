@@ -145,4 +145,23 @@ router.post('/:dst/:src/copy', async (req, res, next) => {
     }
 });
 
+router.post('/:dst/:src/dup', async (req, res, next) => {
+    try {
+        const src_dir = '/' + req.params.src;
+        let fileName = req.params.src.replace(path.dirname(req.params.src), '');
+        let fileType = fileName.substring(fileName.lastIndexOf('.') + 1, fileName.length);
+        fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+        const dst_dir = '/' + req.params.dst + fileName + '_dup.' + fileType;
+        console.log(dst_dir);
+        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        let msg = await client.copy_file(src_dir, dst_dir);
+        console.log(msg);
+        client.socket.destroy();
+        res.status(200).end();
+    } catch (err) {
+        console.log(err);
+        client.socket.destroy();
+    }
+});
+
 module.exports = router;

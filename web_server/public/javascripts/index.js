@@ -9,55 +9,117 @@ $(function () {
         if ($('#fileInput').val() === '') {
             event.preventDefault();
             alert('File not selected');
+            return;
+        }
+        let fileName = $('#fileInput')[0].files[0].name;
+        const result = json.find((e) => {
+            return e['name'] == fileName;
+        });
+        if (result !== undefined) {
+            const overwrite = confirm('Do you want to overwrite ' + fileName + '?');
+            if (overwrite == false) {
+                return;
+            } else {
+                $.ajax({
+                    url: currentUrl + '%2F' + fileName + '/delete',
+                    method: 'DELETE',
+                })
+                    .done(() => {
+                        $('#upload').submit();
+                    })
+                    .fail(() => {
+                        alert('Overwrite failed ' + fileName);
+                    });
+            }
         }
     });
 
     // Move Button
     let move_flag = sessionStorage.getItem('move_flag');
-    if (move_flag === 'true') {
-        $('#move_btn').show();
+    $('#move_btn').click(() => {
         let move_src = sessionStorage.getItem('move_src');
         let move_name = sessionStorage.getItem('move_name');
-        $('#move_btn').click(() => {
-            $.ajax({
-                url: currentUrl + move_src + '/move',
-                method: 'PUT',
-            })
-                .done(() => {
-                    alert('Moved ' + move_name);
-                    sessionStorage.removeItem('move_flag');
-                    sessionStorage.removeItem('move_src');
-                    sessionStorage.removeItem('move_name');
-                    location.reload();
-                })
-                .fail(() => {
-                    alert('Move failed ' + move_name);
-                });
+        const result = json.find((e) => {
+            return e['name'] === move_name;
         });
+        if (result !== undefined) {
+            const overwrite = confirm('Do you want to overwrite ' + move_name + '?');
+            if (overwrite == false) {
+                return;
+            }
+        }
+        $.ajax({
+            url: currentUrl + move_src + '/move',
+            method: 'PUT',
+        })
+            .done(() => {
+                alert('Moved ' + move_name);
+                sessionStorage.removeItem('move_flag');
+                sessionStorage.removeItem('move_src');
+                sessionStorage.removeItem('move_name');
+                location.reload();
+            })
+            .fail(() => {
+                alert('Move failed ' + move_name);
+            });
+    });
+    if (move_flag === 'true') {
+        $('#move_btn').show();
     }
 
     // Copy Button
     let copy_flag = sessionStorage.getItem('copy_flag');
+    $('#copy_btn').click(() => {
+        let copy_src = sessionStorage.getItem('copy_src');
+        let copy_path = sessionStorage.getItem('copy_path');
+        let copy_name = sessionStorage.getItem('copy_name');
+        const result = json.find((e) => {
+            return e.name === copy_name;
+        });
+        if (result !== undefined && copy_path === currentPath) {
+            const make_dup = confirm('Do you want to make a  duplicate of ' + copy_name + '?');
+            if (make_dup == true) {
+                $.ajax({
+                    url: currentUrl + copy_src + '/dup',
+                    method: 'POST',
+                })
+                    .done(() => {
+                        alert('Duplicated ' + copy_name);
+                        sessionStorage.removeItem('copy_flag');
+                        sessionStorage.removeItem('copy_src');
+                        sessionStorage.removeItem('copy_name');
+                        location.reload();
+                    })
+                    .fail(() => {
+                        alert('Duplicate failed ' + copy_name);
+                    });
+                return;
+            } else {
+                return;
+            }
+        } else if (result !== undefined) {
+            const overwrite = confirm('Do you want to overwrite ' + copy_name + '?');
+            if (overwrite == false) {
+                return;
+            }
+        }
+        $.ajax({
+            url: currentUrl + copy_src + '/copy',
+            method: 'POST',
+        })
+            .done(() => {
+                alert('Copied ' + copy_name);
+                sessionStorage.removeItem('copy_flag');
+                sessionStorage.removeItem('copy_src');
+                sessionStorage.removeItem('copy_name');
+                location.reload();
+            })
+            .fail(() => {
+                alert('Copy failed ' + copy_name);
+            });
+    });
     if (copy_flag === 'true') {
         $('#copy_btn').show();
-        let copy_src = sessionStorage.getItem('copy_src');
-        let copy_name = sessionStorage.getItem('copy_name');
-        $('#copy_btn').click(() => {
-            $.ajax({
-                url: currentUrl + copy_src + '/copy',
-                method: 'POST',
-            })
-                .done(() => {
-                    alert('Copied ' + copy_name);
-                    sessionStorage.removeItem('copy_flag');
-                    sessionStorage.removeItem('copy_src');
-                    sessionStorage.removeItem('copy_name');
-                    location.reload();
-                })
-                .fail(() => {
-                    alert('Copy failed ' + move_name);
-                });
-        });
     }
 
     // Show directory hierarchy using bootstrap breadcrumb
@@ -193,6 +255,7 @@ $(function () {
                 $('#copy_btn').show('fast');
                 sessionStorage.setItem('copy_flag', true);
                 sessionStorage.setItem('copy_src', currentPath + '%2F' + decodeURI(json[i]['name']));
+                sessionStorage.setItem('copy_path', currentPath);
                 sessionStorage.setItem('copy_name', json[i]['name']);
             });
 
