@@ -46,8 +46,10 @@ TEST (FILE_MANAGER, FILES_IN_DIRECTORY_TO_VECTOR) {
 
     // test for empty directory
 
+    mkdir("./unittest/testEmptyDirectory", 0644);
     ret = fm.files_in_directory_to_vector("./unittest/testEmptyDirectory", &fileList);
     ASSERT_EQ(ret, 0);
+    rmdir("./unittest/testEmptyDirectory");
 
     ASSERT_EQ(fileList.size(), 0);
 
@@ -88,9 +90,6 @@ TEST (FILE_MANAGER, STAT_GET_TYPE) {
 
     fm.get_stat_of_file("/dev/ram0", &st);
     ASSERT_EQ(fm.stat_get_type(&st), "Block Device");
-
-    fm.get_stat_of_file("./unittest/testDirectory/1_link", &st);
-    ASSERT_EQ(fm.stat_get_type(&st), "Link");
 
     struct stat initSt;
     ASSERT_EQ(fm.stat_get_type(&initSt), "");

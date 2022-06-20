@@ -12,9 +12,6 @@ Run with root privileges
 **********************/
 
 TEST (NETS, SERVER_SOCKET_INIT_TEST) {
-    // supress stderr
-    EXPECT_EQ(freopen("/dev/null", "w+", stderr) != NULL, true);
-
     struct rlimit rlim;
     getrlimit(RLIMIT_NOFILE, &rlim);
 
@@ -46,9 +43,6 @@ TEST (NETS, SERVER_SOCKET_INIT_TEST) {
 }
 
 TEST (NETS, SERVER_SOCEKT_BIND_TEST) {
-    EXPECT_EQ(freopen("/dev/null", "w+", stderr) != NULL, true);
-
-
     srand((unsigned int)time(NULL));
     int randVal = rand() % 25000;
 
@@ -65,8 +59,6 @@ TEST (NETS, SERVER_SOCEKT_BIND_TEST) {
 }
 
 TEST (NETS, SERVER_SOCKET_LISTEN_TEST) {
-    EXPECT_EQ(freopen("/dev/null", "w+", stderr) != NULL, true);
-
     server_object successObj, badFdObj;
 
     srand((unsigned int)time(NULL));
