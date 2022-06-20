@@ -6,33 +6,45 @@ _____________________________________________________
 
 ```mermaid
 graph TD
-    A[START] --> |get config from global.hpp|B(BINDING)
+    A[START] --> |load config from cli or file|B(BINDING)
     C[global.hpp] --> |configs|B(binding)
     B --> |establish TCP server socket|D(TCP Socket Established)
     D --> |Start Loop|E(Main LOOP)
-    E --> |recv/wait on TCP REQ.|E
-    E --> |+ thread on REQ.|F(Session Handler)
+    E --> |listen & recv on TCP port|E
+    E --> |on new client socket: + thread|F(Session Handler)
+    F --> |parse recvd header|G(Call Handle Func)
+    
+    G --> AA(Download)
+    G --> BB(Upload)
+    G --> CC(Get Files Info)
+    G --> DD(Copy, Move, Delete)
+    
+    AA --> |binary|T(TCP Stream)
+    BB --> |binary|T
+    CC --> |json|T
+    DD --> |binary|T2(Internal File I/O)
 ```
   ### Request Protocol Format
   #### Over TCP Stack  
-| Protocol Value(field names) | Protocol Type | Dir. Size            |      Directory       | Data Size               |        Data          |
-| --------------------------- | ------------- | -------------------- | -------------------- | ----------------------- | -------------------- |
-| FIELD SIZE ==========>      | 1 / byte      | 4 / uint32           | Dir. Size / string   | 4 / uint32              | Data Size / byte(s)  |
-| 0:REQ_TYPE_DIR_INFO_DEPTH_2 | 0             | DirSize in uint32    | DirName in string    | 0                       | -                    |
-| 1:REQ_TYPE_DOWNLOAD_FILE    | 1             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
-| 2:REQ_TYPE_COPY_FILE        | 2             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
-| 3:REQ_TYPE_MOVE_FILE        | 3             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
-| 4:REQ_TYPE_DELETE_FILE      | 4             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
-| 5:REQ_TYPE_RENAME_FILE      | 5             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
-| 6:REQ_TYPE_DIR_INFO_DEPTH_1 | 6             | DirSize in uint32    | DirName in string    | 0                       | -                    |
+| Protocol Value              |    Field Name   | Protocol Type | Dir. Size            |      Directory       | Data Size               |        Data          |
+| --------------------------- | --------------- |------------- | -------------------- | -------------------- | ----------------------- | -------------------- |
+| FIELD SIZE>                 | -               |1 / byte      | 4 / uint32           | Dir. Size / string   | 4 / uint32              | Data Size / byte(s)  |
+| 0:REQ_TYPE_DIR_INFO_DEPTH_2 | Get File Tree 2 |0             | DirSize in uint32    | DirName in string    | 0                       | -                    |
+| 1:REQ_TYPE_DOWNLOAD_FILE    | Download File   |1             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
+| 2:REQ_TYPE_COPY_FILE        | Copy File       |2             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 3:REQ_TYPE_MOVE_FILE        | Move File       |3             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 4:REQ_TYPE_DELETE_FILE      | Delete File     |4             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
+| 5:REQ_TYPE_RENAME_FILE      | Rename File     |5             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
+| 6:REQ_TYPE_DIR_INFO_DEPTH_1 | Get Files in Dir|6             | DirSize in uint32    | DirName in string    | 0                       | -                    |
+| 7:REQ_TYPE_UPLOAD_FILE      | Upload File     |7             | DirSize in uint32    | DirName in string    | FileNameSize in uint32  | FileName with no path|
   
     
   ### Session Handler: response scenario for each protocol type
 #### Short Example
 ```
 EX) Request for information in pi's home directory:  
-READ) 6  |    8 bytes  | /  h  o  m  e  /  p  i  | 0           | -  
-HEX)  06 | 08 00 00 00 | 2F 68 6F 6D 65 2F 70 69 | 00 00 00 00 | -  
+Human) 6  |    8 bytes  | /  h  o  m  e  /  p  i  | 0           | -  
+hex )  06 | 08 00 00 00 | 2F 68 6F 6D 65 2F 70 69 | 00 00 00 00 | -  
 ```
 
 ```
@@ -58,13 +70,7 @@ DATA)
 ]
 ```
 #### Data Formats  
-**Data Block**  
-[ 4 bytes - Size ] [ Size * bytes ]
-| Fields | Data Size | Data |
-| ------ | --------- | ---- |
-| Size | 4 bytes   | Data Size * byte |
-| Format | uint32    | bytes |
-  
+
 **ACK Block**  
 | Field | ACK Block |
 | ----- | --------- |
@@ -76,29 +82,53 @@ DATA)
 
 ```mermaid
 sequenceDiagram
-    Client->>Server: Request Protocol Format
+    Client->>Server: Send DIR_INFO request header
 
-    Server->>Server: read dir info, make json
+    Server->>Server: parser header and read DIR info
     
-    Server->>Client: Data Block(json)
+    Server->>Client: Data Block(json) (json string followed by strlen(uint32))
 ```  
 
 **Protocol: 1:REQ_TYPE_DOWNLOAD_FILE**
 ```mermaid
 sequenceDiagram
-    Client->>Server: Request Protocol Format
+    Client->>Server: Send Download request header
 
-    Server->>Server: read file data
+    Server->>Server: parse header and start file send stream
     
-    Server->>Client: Data Block(bytes)    
-````  
+    Server->>Client: Send File Size(uint32)
+    
+    Client->>Server: Send ACK Block
+    
+    Server->>Client: Send File over stream
+    
+    Client->>Client: Process stream into file
+```  
 
-**Protocol: 2:REQ_TYPE_COPY_FILE, 3:REQ_TYPE_MOVE_FILE, 4:REQ_TPYE_DELETE_FILE, 5:REQ_TYPE_RENAME_FILE**
+**Protocol: 7:REQ_TYPE_UPLOAD_FILE**
 ```mermaid
 sequenceDiagram
-    Client->>Server: Request Protocol Format
+    Client->>Server: Send Upload request header
+    
+    Server->>Server: parse header and check availability
+    
+    Server->>Client: If available, send ACK block
+    
+    Client->>Server: Send file size in uint32
+    
+    Server->>Client: Read file size and prepare download stream
+    
+    Client->>Server: Send file data
+    
+    Server->>Server: Process stream into file    
+```
 
-    Server->>Server: process file i/o internally
+**Protocol: 2:REQ_TYPE_COPY_FILE, 3:REQ_TYPE_MOVE_FILE, 4:REQ_TYPE_DELETE_FILE, 5:REQ_TYPE_RENAME_FILE**
+```mermaid
+sequenceDiagram
+    Client->>Server: Send Protocol Header
+
+    Server->>Server: parse header, process I/O ops.
     
     Server->>Client: ACK Block
 ```
