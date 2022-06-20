@@ -22,55 +22,6 @@ int session_object::handle_request(char type,
                                     std::string data,
                                     int c_sock) {
     switch (type) {
-        case REQ_TYPE_DIR_INFO_DEPTH_2: {
-            json_handler jh;
-
-            if (lock->check_lock(lock->HARD_LOCK, dir)) {
-                lock->add_lock(lock->SOFT_LOCK, dir);
-
-                Json::Value dir_json_object(Json::arrayValue);
-                int ret = jh.make_json_object(dir, 2, &dir_json_object);
-                if (ret < 0) {
-                    perror("make json object failure");
-                    lock->remove_lock(lock->SOFT_LOCK, dir);
-                    return -1;
-                }
-
-                std::string json_str = dir_json_object.toStyledString();
-
-                int buffer_size = json_str.length();
-
-                std::cout << "SENT :" << buffer_size << std::endl;
-
-                // disable printing contents --> stdout
-                // std::cout << "CONTENT:" << json_str << std::endl;
-
-                const int kBufSize = 4 + buffer_size + 1;
-                char send_buffer[kBufSize];
-
-                memset(send_buffer, 0x0, buffer_size);
-                uint32_t data_size = buffer_size;
-
-                memcpy(send_buffer, &data_size, 4);
-
-                printf("JSON_STR LEN: %u\n", json_str.length());
-
-                snprintf(send_buffer + 4, sizeof(send_buffer) -4,
-                        "%s", json_str.c_str());
-                
-                if (write(c_sock, send_buffer, 4 + buffer_size) < 0) {
-                    std::cout << "Write Failed...\n" << std::endl;
-                    lock->remove_lock(lock->SOFT_LOCK, dir);
-                    return -1;
-                }
-
-                lock->remove_lock(lock->SOFT_LOCK, dir);
-            } else {
-                // HARD LOCKED, can't read
-                return -1;
-            }
-        break;
-        }
         case REQ_TYPE_DOWNLOAD_FILE: {
             std::stringstream ss;
             ss << dir << data;
@@ -292,7 +243,7 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->SOFT_LOCK, dir);
 
                 Json::Value dir_json_object(Json::arrayValue);
-                int ret = jh.make_json_object(dir, 1, &dir_json_object);
+                int ret = jh.make_json_object(dir, &dir_json_object);
                 if (ret < 0) {
                     perror("make json object failure");
                     lock->remove_lock(lock->SOFT_LOCK, dir);
@@ -348,7 +299,7 @@ int session_object::handle_request(char type,
 
                 struct stat dummyStat;
                 // check if file exists
-                if (lstat(full_file.c_str(), &dummyStat) >= 0) {
+                if (stat(full_file.c_str(), &dummyStat) >= 0) {
                     perror("Requested file already exists!");
                     // file is already present
                     lock->remove_lock(lock->HARD_LOCK, full_file);

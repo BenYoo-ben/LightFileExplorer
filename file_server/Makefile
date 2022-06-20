@@ -85,4 +85,4 @@ $(OBJ_DIR_DEBUG)/%.o: $(GTEST_DIR)/%.cpp
 ##########################################
 
 clean:
-	rm -f $(TARGET) $(LIB) $(GTEST_OUTPUT)/*.test $(OBJ_DIR_DEBUG)/*.o $(OBJ_DIR_RELEASE)/*.o ./*.gcov $(OBJ_DIR_DEBUG)/*.gcov
+	rm -f $(TARGET) $(LIB) $(GTEST_OUTPUT)/*.test $(OBJ_DIR_DEBUG)/*.o $(OBJ_DIR_RELEASE)/*.o ./*.gcov $(OBJ_DIR_DEBUG)/*.gcov $(OBJ_DIR_DEBUG)/*.gcno $(OBJ_DIR_DEBUG)/*.gcda

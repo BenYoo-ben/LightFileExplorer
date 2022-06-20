@@ -11,15 +11,6 @@ file_object::file_object(std::string name, std::string time, std::string auth,
     std::istringstream(is_dir) >> (this->is_dir);
 }
 
-void file_object::print_members() {
-    // debug
-    std::cout<< "name : " << name << "\ntime : " << time <<
-        "\nfile_type : " << type <<
-        "\nauth :" << auth << "\nsize : " <<
-        size << "\nis_dir : " << is_dir <<
-        std::endl << std::endl;
-}
-
 std::string file_object::get_name() {
     return name;
 }
@@ -48,20 +39,6 @@ void file_object::set_type(std::string new_type) {
     type = new_type;
 }
 
-directory_object::directory_object(std::vector<std::vector<file_object>> parsed_json, std::string directory_path) {
-    this->dir = parsed_json;
-    this->directory_path = directory_path;
-}
-
-int directory_object::get_vectors(std::vector<std::vector<file_object>> *vvfObjPtr) {
-    *vvfObjPtr = dir;
-    return 0;
-}
-
-std::string directory_object::get_directory_path() {
-    return directory_path;
-}
-
 int json_handler::directory_to_file_object_vector
 (std::string dir_name ,std::vector<file_object> *vfObjPtr) {
     std::vector<file_object> &file_objects = *vfObjPtr;
@@ -78,11 +55,11 @@ int json_handler::directory_to_file_object_vector
     for (std::string s : file_names) {
         struct stat status;
         int statRet = fm.get_stat_of_file(dir_name+"/" + s, &status);
+
         if (statRet < 0) {
             perror("get stat failure");
             return -1;
         }
-    
 
         file_object fo(
                 s,
@@ -97,99 +74,31 @@ int json_handler::directory_to_file_object_vector
     return 0;
 }
 
-int json_handler::make_json_object(std::string dir_name, int depth, Json::Value *jvPtr) {
+int json_handler::make_json_object(std::string dir_name, Json::Value *jvPtr) {
     std::vector<file_object> basic_files; 
-    
+
     int ret = directory_to_file_object_vector(dir_name, &basic_files);
-    
+
     if (ret < 0) {
         perror("Dir to File Vector failure");
         return -1;
     }
 
     Json::Value &root = *jvPtr;
-    if (depth == 2) {
-        std::vector<std::vector<file_object>> data;
 
-        for (file_object s : basic_files) {
-            std::vector<file_object> elem;
+    for (file_object s : basic_files) {
+        Json::Value elem;
+        elem["name"] = s.get_name();
+        elem["time"] = s.get_time();
+        elem["auth"] = s.get_auth();
+        elem["type"] = s.get_type();
+        elem["size"] = std::to_string(s.get_size());
+        elem["is_dir"] = std::to_string(s.get_is_dir());
 
-            if (s.get_is_dir()) {
-                elem.push_back(s);
-                std::vector<file_object> files_in_directory;
-                
-                int retfObjToVect= directory_to_file_object_vector(dir_name + s.get_name(), &files_in_directory);
-                
-                if (retfObjToVect < 0) {
-                    perror("Dir to File Vector failure 2");
-                    return -1;
-                }
-
-                elem.insert(elem.end(),
-                        files_in_directory.begin(),
-                        files_in_directory.end());
-            } else {
-                elem.push_back(s);
-            }
-
-            data.push_back(elem);
-            elem.clear();
-        }
-        std::cout << data.size() <<std::endl;
-
-        for (std::vector<file_object> inner_vector : data) {
-            if (inner_vector.size() > 1) {
-                Json::Value content(Json::arrayValue);
-
-                for (file_object fo : inner_vector) {
-                    Json::Value elem;
-
-                    elem["name"] = fo.get_name();
-                    elem["time"] = fo.get_time();
-                    elem["auth"] = fo.get_auth();
-                    elem["type"] = fo.get_type();
-                    elem["size"] = std::to_string(fo.get_size());
-                    elem["is_dir"] = std::to_string(fo.get_is_dir());
-
-                    content.append(elem);
-                }
-
-                root.append(content);
-            } else {
-                Json::Value elem;
-
-                file_object fo = inner_vector.at(0);
-                elem["name"] = fo.get_name();
-                elem["time"] = fo.get_time();
-                elem["auth"] = fo.get_auth();
-                elem["type"] = fo.get_type();
-                elem["size"] = std::to_string(fo.get_size());
-                elem["is_dir"] = std::to_string(fo.get_is_dir());
-
-                root.append(elem);
-            }
-        }
-
-        return 0;;
-    } else if (depth == 1) {
-
-        for (file_object s : basic_files) {
-            Json::Value elem;
-            elem["name"] = s.get_name();
-            elem["time"] = s.get_time();
-            elem["auth"] = s.get_auth();
-            elem["type"] = s.get_type();
-            elem["size"] = std::to_string(s.get_size());
-            elem["is_dir"] = std::to_string(s.get_is_dir());
-
-            root.append(elem);
-        }
-
-        return 0;
-    } else {
-        perror("Unknown depth ! \n");
-        return -1;
+        root.append(elem);
     }
+
+    return 0;
 }
 
 lock_handler::lock_handler() {
@@ -251,28 +160,5 @@ bool lock_handler::check_lock(int lock_no, std::string full_name) {
         return false;
     } else {
         return true;
-    }
-}
-
-void lock_handler::debug_lock() {
-    std::map<std::string, int>::iterator it;
-
-    std::cout << " < SOFT > " << std::endl;
-    for (it = soft_lock.begin(); it != soft_lock.end(); it++) {
-        std::cout
-            << it->first    // string (key)
-            << ':'
-            << it->second   // string's value
-            << std::endl;
-    }
-    std::map<std::string, int>::iterator it2;
-
-    std::cout << " < HARD > " << std::endl;
-    for (it2 = hard_lock.begin(); it2 != hard_lock.end(); it2++) {
-        std::cout
-            << it2->first    // string (key)
-            << ':'
-            << it2->second   // string's value
-            << std::endl;
     }
 }

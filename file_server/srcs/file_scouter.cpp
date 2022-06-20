@@ -26,7 +26,7 @@ int file_manager::files_in_directory_to_vector(std::string string_dir_name, std:
 
 int file_manager::get_stat_of_file(std::string file_name, struct stat *st) {
     const char *file_name_in_char_array = file_name.c_str();
-    return lstat(file_name_in_char_array, st);
+    return stat(file_name_in_char_array, st);
 }
 
 std::string file_manager::stat_get_type(struct stat *st) {
@@ -38,9 +38,7 @@ std::string file_manager::stat_get_type(struct stat *st) {
         return std::string("Char Device");
     } else if (S_ISBLK(st->st_mode)) {
         return std::string("Block Device");
-    } else if (S_ISLNK(st->st_mode)) {
-        return std::string("Link");
-    }
+    } 
     return "";
 }
 
