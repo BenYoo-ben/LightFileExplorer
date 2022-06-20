@@ -1,6 +1,6 @@
 # Web Server
 
-This program is Javascript version of [Network File Explorer](https://github.com/BenYoo-ben/LightFileExplorer/tree/master/network_file_explorer)'s client.
+This program is Javascript version of [Network File Explorer](https://github.com/BenYoo-ben/LightFileExplorer/tree/master/file_server)'s client.
 
 ## Run
 
