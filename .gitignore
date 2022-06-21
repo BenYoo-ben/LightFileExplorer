@@ -34,7 +34,10 @@ build/
 
 ### Dependency directories ###
 node_modules/
+
+### Temp directories for upload and download
 uploads/
 downloads/
 
+### Host address and port
 tcp-server.json
