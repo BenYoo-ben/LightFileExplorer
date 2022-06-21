@@ -47,6 +47,15 @@ a {
     font-style: italic;
 }
 
+#fileType {
+    padding: 1.25rem 0.75rem 0;
+    align-self: flex-start;
+}
+
+#temp {
+    width: 100%;
+}
+
 td.icon,
 td.dropdown > a {
     padding-left: 0;
