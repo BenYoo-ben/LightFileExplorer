@@ -145,6 +145,7 @@ router.post('/:dst/:src/copy', async (req, res, next) => {
     }
 });
 
+// File duplicate Route
 router.post('/:dst/:src/dup', async (req, res, next) => {
     try {
         const src_dir = '/' + req.params.src;
@@ -155,6 +156,22 @@ router.post('/:dst/:src/dup', async (req, res, next) => {
         console.log(dst_dir);
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let msg = await client.copy_file(src_dir, dst_dir);
+        console.log(msg);
+        client.socket.destroy();
+        res.status(200).end();
+    } catch (err) {
+        console.log(err);
+        client.socket.destroy();
+    }
+});
+
+// File rename Route
+router.put('/:src/:dst/rename', async (req, res, next) => {
+    try {
+        const src_dir = '/' + req.params.src;
+        const dst_dir = '/' + path.dirname(req.params.src) + '/' + req.params.dst;
+        let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
+        let msg = await client.rename_file(src_dir, dst_dir);
         console.log(msg);
         client.socket.destroy();
         res.status(200).end();

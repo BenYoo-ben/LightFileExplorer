@@ -122,6 +122,60 @@ $(function () {
         $('#copy_btn').show();
     }
 
+    // Check if new name is empty
+    $('#newName').focusout(() => {
+        let newName = $('#newName').val() + $('#fileType').text();
+        const result = json.find((e) => {
+            return e['name'] === newName;
+        });
+        if ($('#newName').val() == '') {
+            $('#newName').addClass('is-invalid');
+            $('#newName').removeClass('is-valid');
+            $('#invalidFileName').text('File name empty!');
+            $('#renameBtn').prop('disabled', true);
+        } else if (result !== undefined) {
+            $('#newName').addClass('is-invalid');
+            $('#newName').removeClass('is-valid');
+            $('#invalidFileName').text('New file name exists!');
+            $('#renameBtn').prop('disabled', true);
+        } else {
+            $('#newName').removeClass('is-invalid');
+            $('#newName').addClass('is-valid');
+            $('#renameBtn').prop('disabled', false);
+        }
+    });
+
+    // Rename button
+    $('#renameBtn').click(() => {
+        let src_file = $('#modalTitle').text();
+        let newName = $('#newName').val() + $('#fileType').text();
+        src_file = src_file.replace('Rename ', '');
+
+        if (sessionStorage.getItem('copy_flag') == 'true') {
+            sessionStorage.removeItem('copy_flag');
+            sessionStorage.removeItem('copy_src');
+            sessionStorage.removeItem('copy_name');
+            $('#copy_btn').hide();
+        }
+        if (sessionStorage.getItem('move_flag') == 'true') {
+            sessionStorage.removeItem('move_flag');
+            sessionStorage.removeItem('move_src');
+            sessionStorage.removeItem('move_name');
+            $('#move_btn').hide();
+        }
+        $.ajax({
+            url: currentUrl + '%2F' + src_file + '/' + newName + '/rename',
+            method: 'PUT',
+        })
+            .done(() => {
+                alert('Renanmed ' + src_file);
+                location.reload();
+            })
+            .fail(() => {
+                alert(src_file + ' rename failed ');
+            });
+    });
+
     // Show directory hierarchy using bootstrap breadcrumb
     const dirs = cur_dir.split('/');
     let url = '/';
@@ -218,6 +272,14 @@ $(function () {
             let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
             let li_delete = $('<li>').append($('<button>').text('Delete').addClass('dropdown-item').attr('type', 'button'));
             let li_copy = $('<li>').append($('<button>').text('Copy to').addClass('dropdown-item').attr('type', 'button'));
+            let li_rename = $('<li>').append(
+                $('<button>')
+                    .text('Rename')
+                    .addClass('dropdown-item')
+                    .attr('type', 'button')
+                    .attr('data-bs-toggle', 'modal')
+                    .attr('data-bs-target', '#renameModal')
+            );
             const encoded = encodeURIComponent('/' + json[i]['name']);
             let download_url = currentUrl + encoded + '/download';
             let delete_url = currentUrl + encoded + '/delete';
@@ -245,6 +307,12 @@ $(function () {
                 sessionStorage.setItem('move_flag', true);
                 sessionStorage.setItem('move_src', currentPath + '%2F' + decodeURI(json[i]['name']));
                 sessionStorage.setItem('move_name', json[i]['name']);
+                if (sessionStorage.getItem('copy_flag') == 'true') {
+                    sessionStorage.removeItem('copy_flag');
+                    sessionStorage.removeItem('copy_src');
+                    sessionStorage.removeItem('copy_name');
+                    $('#copy_btn').hide();
+                }
             });
 
             // Copy a file
@@ -257,20 +325,34 @@ $(function () {
                 sessionStorage.setItem('copy_src', currentPath + '%2F' + decodeURI(json[i]['name']));
                 sessionStorage.setItem('copy_path', currentPath);
                 sessionStorage.setItem('copy_name', json[i]['name']);
+                if (sessionStorage.getItem('move_flag') == 'true') {
+                    sessionStorage.removeItem('move_flag');
+                    sessionStorage.removeItem('move_src');
+                    sessionStorage.removeItem('move_name');
+                    $('#move_btn').hide();
+                }
+            });
+
+            li_rename.click(() => {
+                $('#modalTitle').text('Rename ' + json[i]['name']);
+                $('#fileType').text(json[i]['name'].substring(json[i]['name'].lastIndexOf('.'), json[i]['name'].length));
+                $('#newName').attr('placeholder', json[i]['name'].substring(0, json[i]['name'].lastIndexOf('.')));
+                $('#renameBtn').prop('disabled', true);
+                $('#newName').val('');
+                $('#newName').removeClass('is-invalid');
+                $('#newName').removeClass('is-valid');
             });
 
             dropdown_menu.append(li_delete);
             dropdown_menu.append(li_move);
             dropdown_menu.append(li_copy);
+            dropdown_menu.append(li_rename);
         } else {
             dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
             dropdown_menu.append($('<li>').append($('<a>').text('Move to').addClass('dropdown-item').attr('href', '')));
             dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
+            dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
         }
-
-        // Buttons for later purposes
-
-        dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
 
         td_dropdown.append(dropdown_menu);
         tr.append(td_dropdown);
