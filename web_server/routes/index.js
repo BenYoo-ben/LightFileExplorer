@@ -105,7 +105,7 @@ router.post('/:dir/upload', (req, res, next) => {
                     console.log('File Unlink Err: Other');
                 }
             });
-            res.redirect('/' + req.params.dir);
+            res.redirect('/' + encodeURIComponent(req.params.dir));
         } catch {
             console.log(err);
             client.socket.destroy();
@@ -150,10 +150,15 @@ router.post('/:dst/:src/dup', async (req, res, next) => {
     try {
         const src_dir = '/' + req.params.src;
         let fileName = req.params.src.replace(path.dirname(req.params.src), '');
-        let fileType = fileName.substring(fileName.lastIndexOf('.') + 1, fileName.length);
-        fileName = fileName.substring(0, fileName.lastIndexOf('.'));
-        const dst_dir = '/' + req.params.dst + fileName + '_dup.' + fileType;
-        console.log(dst_dir);
+        let dst_dir;
+        console.log(fileName);
+        if (fileName.lastIndexOf('.') !== 1 && fileName.lastIndexOf('.') !== -1) {
+            let fileType = fileName.substring(fileName.lastIndexOf('.') + 1, fileName.length);
+            fileName = fileName.substring(0, fileName.lastIndexOf('.'));
+            dst_dir = '/' + req.params.dst + fileName + '_dup.' + fileType;
+        } else {
+            dst_dir = '/' + req.params.dst + fileName + '_dup';
+        }
         let client = new TCPClient({ port: tcp_server.port, host: tcp_server.host });
         let msg = await client.copy_file(src_dir, dst_dir);
         console.log(msg);

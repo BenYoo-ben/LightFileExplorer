@@ -4,7 +4,7 @@ const currentPath = window.location.pathname;
 $(function () {
     $('#upload').attr('action', currentUrl + '/upload');
 
-    // Check if file is empty
+    // Check if upload file is empty
     $('#fileSubmit').click(() => {
         if ($('#fileInput').val() === '') {
             event.preventDefault();
@@ -39,14 +39,18 @@ $(function () {
     $('#move_btn').click(() => {
         let move_src = sessionStorage.getItem('move_src');
         let move_name = sessionStorage.getItem('move_name');
+        let move_type = sessionStorage.getItem('move_type');
         const result = json.find((e) => {
             return e['name'] === move_name;
         });
-        if (result !== undefined) {
+        if (result !== undefined && move_type === 'file') {
             const overwrite = confirm('Do you want to overwrite ' + move_name + '?');
             if (overwrite == false) {
                 return;
             }
+        } else if (result !== undefined && move_type === 'dir') {
+            alert(move_name + ' exists in current directory.');
+            return;
         }
         $.ajax({
             url: currentUrl + move_src + '/move',
@@ -57,6 +61,7 @@ $(function () {
                 sessionStorage.removeItem('move_flag');
                 sessionStorage.removeItem('move_src');
                 sessionStorage.removeItem('move_name');
+                sessionStorage.removeItem('move_type');
                 location.reload();
             })
             .fail(() => {
@@ -73,10 +78,11 @@ $(function () {
         let copy_src = sessionStorage.getItem('copy_src');
         let copy_path = sessionStorage.getItem('copy_path');
         let copy_name = sessionStorage.getItem('copy_name');
+        let copy_type = sessionStorage.getItem('copy_type');
         const result = json.find((e) => {
             return e.name === copy_name;
         });
-        if (result !== undefined && copy_path === currentPath) {
+        if (result !== undefined && copy_path === currentPath && copy_type === 'file') {
             const make_dup = confirm('Do you want to make a  duplicate of ' + copy_name + '?');
             if (make_dup == true) {
                 $.ajax({
@@ -97,11 +103,14 @@ $(function () {
             } else {
                 return;
             }
-        } else if (result !== undefined) {
+        } else if (result !== undefined && copy_type === 'file') {
             const overwrite = confirm('Do you want to overwrite ' + copy_name + '?');
             if (overwrite == false) {
                 return;
             }
+        } else if (result !== undefined && copy_type === 'dir') {
+            alert(copy_name + ' exists in current directory.');
+            return;
         }
         $.ajax({
             url: currentUrl + copy_src + '/copy',
@@ -122,7 +131,7 @@ $(function () {
         $('#copy_btn').show();
     }
 
-    // Check if new name is empty
+    // Check if new name is empty or exists
     $('#newName').focusout(() => {
         let newName = $('#newName').val() + $('#fileType').text();
         const result = json.find((e) => {
@@ -131,12 +140,20 @@ $(function () {
         if ($('#newName').val() == '') {
             $('#newName').addClass('is-invalid');
             $('#newName').removeClass('is-valid');
-            $('#invalidFileName').text('File name empty!');
+            if ($('newName').attr('data-type') === 'file') {
+                $('#invalidName').text('File name empty!');
+            } else {
+                $('#invalidName').text('Directory name empty!');
+            }
             $('#renameBtn').prop('disabled', true);
         } else if (result !== undefined) {
             $('#newName').addClass('is-invalid');
             $('#newName').removeClass('is-valid');
-            $('#invalidFileName').text('New file name exists!');
+            if ($('newName').attr('data-type') === 'file') {
+                $('#invalidName').text('New file name exists!');
+            } else {
+                $('#invalidName').text('New directory name exists!');
+            }
             $('#renameBtn').prop('disabled', true);
         } else {
             $('#newName').removeClass('is-invalid');
@@ -188,6 +205,7 @@ $(function () {
             li.text(dirs[i]);
             li.addClass('active');
         } else if (i === 0) {
+            url = url + dirs[i];
             let a = $('<a>').attr('href', url).text(dirs[i]);
             li.append(a);
         } else {
@@ -268,27 +286,22 @@ $(function () {
         </a>`);
         let dropdown_menu = $(`<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1"></ul>`);
 
-        if (json[i]['is_dir'] === '0') {
-            let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
-            let li_delete = $('<li>').append($('<button>').text('Delete').addClass('dropdown-item').attr('type', 'button'));
-            let li_copy = $('<li>').append($('<button>').text('Copy to').addClass('dropdown-item').attr('type', 'button'));
-            let li_rename = $('<li>').append(
-                $('<button>')
-                    .text('Rename')
-                    .addClass('dropdown-item')
-                    .attr('type', 'button')
-                    .attr('data-bs-toggle', 'modal')
-                    .attr('data-bs-target', '#renameModal')
-            );
-            const encoded = encodeURIComponent('/' + json[i]['name']);
-            let download_url = currentUrl + encoded + '/download';
-            let delete_url = currentUrl + encoded + '/delete';
+        let li_move = $('<li>').append($('<button>').text('Move to').addClass('dropdown-item').attr('type', 'button'));
+        let li_delete = $('<li>').append($('<button>').text('Delete').addClass('dropdown-item').attr('type', 'button'));
+        let li_copy = $('<li>').append($('<button>').text('Copy to').addClass('dropdown-item').attr('type', 'button'));
+        let li_rename = $('<li>').append(
+            $('<button>').text('Rename').addClass('dropdown-item').attr('type', 'button').attr('data-bs-toggle', 'modal').attr('data-bs-target', '#renameModal')
+        );
+        const encoded = encodeURIComponent('/' + json[i]['name']);
+        let download_url = currentUrl + encoded + '/download';
+        let delete_url = currentUrl + encoded + '/delete';
 
-            // Download a file
-            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', download_url)));
-
-            // Delete a file
-            li_delete.click(() => {
+        // Delete button
+        li_delete.click(() => {
+            const delete_confirm = confirm('Do you want to delete ' + json[i]['name'] + '?');
+            if (delete_confirm == false) {
+                return;
+            } else {
                 $.ajax({
                     url: delete_url,
                     method: 'DELETE',
@@ -296,62 +309,93 @@ $(function () {
                     alert('Deleted ' + json[i]['name']);
                     location.reload();
                 });
-            });
+            }
+        });
 
-            // Move a file
-            li_move.click(() => {
-                const toast = new bootstrap.Toast($('#toast'));
-                $('.toast-body').text('Move ' + json[i]['name']);
-                toast.show();
-                $('#move_btn').show('fast');
-                sessionStorage.setItem('move_flag', true);
-                sessionStorage.setItem('move_src', currentPath + '%2F' + decodeURI(json[i]['name']));
-                sessionStorage.setItem('move_name', json[i]['name']);
-                if (sessionStorage.getItem('copy_flag') == 'true') {
-                    sessionStorage.removeItem('copy_flag');
-                    sessionStorage.removeItem('copy_src');
-                    sessionStorage.removeItem('copy_name');
-                    $('#copy_btn').hide();
-                }
-            });
+        // Move button
+        li_move.click(() => {
+            const toast = new bootstrap.Toast($('#toast'));
+            $('.toast-body').text('Move ' + json[i]['name']);
+            toast.show();
+            $('#move_btn').show('fast');
+            sessionStorage.setItem('move_flag', true);
+            sessionStorage.setItem('move_src', currentPath + '%2F' + decodeURI(json[i]['name']));
+            sessionStorage.setItem('move_name', json[i]['name']);
+            if (json[i]['is_dir'] === '0') {
+                sessionStorage.setItem('move_type', 'file');
+            } else {
+                sessionStorage.setItem('move_type', 'dir');
+            }
+            if (sessionStorage.getItem('copy_flag') == 'true') {
+                sessionStorage.removeItem('copy_flag');
+                sessionStorage.removeItem('copy_src');
+                sessionStorage.removeItem('copy_name');
+                sessionStorage.removeItem('copy_type');
+                $('#copy_btn').hide();
+            }
+        });
 
-            // Copy a file
-            li_copy.click(() => {
-                const toast = new bootstrap.Toast($('#toast'));
-                $('.toast-body').text('Copy ' + json[i]['name']);
-                toast.show();
-                $('#copy_btn').show('fast');
-                sessionStorage.setItem('copy_flag', true);
-                sessionStorage.setItem('copy_src', currentPath + '%2F' + decodeURI(json[i]['name']));
-                sessionStorage.setItem('copy_path', currentPath);
-                sessionStorage.setItem('copy_name', json[i]['name']);
-                if (sessionStorage.getItem('move_flag') == 'true') {
-                    sessionStorage.removeItem('move_flag');
-                    sessionStorage.removeItem('move_src');
-                    sessionStorage.removeItem('move_name');
-                    $('#move_btn').hide();
-                }
-            });
+        // Copy button
+        li_copy.click(() => {
+            const toast = new bootstrap.Toast($('#toast'));
+            $('.toast-body').text('Copy ' + json[i]['name']);
+            toast.show();
+            $('#copy_btn').show('fast');
+            sessionStorage.setItem('copy_flag', true);
+            sessionStorage.setItem('copy_src', currentPath + '%2F' + decodeURI(json[i]['name']));
+            sessionStorage.setItem('copy_path', currentPath);
+            sessionStorage.setItem('copy_name', json[i]['name']);
+            if (json[i]['is_dir'] === '0') {
+                sessionStorage.setItem('copy_type', 'file');
+            } else {
+                sessionStorage.setItem('copy_type', 'dir');
+            }
+            if (sessionStorage.getItem('move_flag') == 'true') {
+                sessionStorage.removeItem('move_flag');
+                sessionStorage.removeItem('move_src');
+                sessionStorage.removeItem('move_name');
+                sessionStorage.removeItem('move_type');
+                $('#move_btn').hide();
+            }
+        });
 
+        if (json[i]['is_dir'] === '0') {
+            // Rename file
             li_rename.click(() => {
                 $('#modalTitle').text('Rename ' + json[i]['name']);
-                $('#fileType').text(json[i]['name'].substring(json[i]['name'].lastIndexOf('.'), json[i]['name'].length));
+                if (json[i]['name'].lastIndexOf('.') !== 0 && json[i]['name'].lastIndexOf('.') !== -1) {
+                    $('#fileType').text(json[i]['name'].substring(json[i]['name'].lastIndexOf('.'), json[i]['name'].length));
+                }
                 $('#newName').attr('placeholder', json[i]['name'].substring(0, json[i]['name'].lastIndexOf('.')));
+                $('#newName').attr('data-type', 'file');
                 $('#renameBtn').prop('disabled', true);
                 $('#newName').val('');
                 $('#newName').removeClass('is-invalid');
                 $('#newName').removeClass('is-valid');
             });
 
+            // Download a file
+            dropdown_menu.append($('<li>').append($('<a>').text('Download').addClass('dropdown-item').attr('href', download_url)));
+
             dropdown_menu.append(li_delete);
             dropdown_menu.append(li_move);
             dropdown_menu.append(li_copy);
             dropdown_menu.append(li_rename);
         } else {
-            dropdown_menu.append($('<li>').append($('<a>').text('Delete').addClass('dropdown-item').attr('href', '')));
-            dropdown_menu.append($('<li>').append($('<a>').text('Move to').addClass('dropdown-item').attr('href', '')));
-            dropdown_menu.append($('<li>').append($('<a>').text('Copy to').addClass('dropdown-item').attr('href', '')));
-            dropdown_menu.append($('<li>').append($('<a>').text('Rename').addClass('dropdown-item').attr('href', '')));
+            // Rename dir
+            li_rename.click(() => {
+                $('#modalTitle').text('Rename ' + json[i]['name']);
+                $('#newName').attr('placeholder', json[i]['name'].substring(0, json[i]['name'].lastIndexOf('.')));
+                $('#newName').attr('data-type', 'dir');
+                $('#renameBtn').prop('disabled', true);
+                $('#newName').val('');
+                $('#newName').removeClass('is-invalid');
+                $('#newName').removeClass('is-valid');
+            });
+            dropdown_menu.append(li_delete);
+            dropdown_menu.append(li_move);
+            dropdown_menu.append(li_copy);
+            dropdown_menu.append(li_rename);
         }
 
         td_dropdown.append(dropdown_menu);
