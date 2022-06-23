@@ -25,7 +25,10 @@ int server_object::server_socket_bind(uint16_t sPort) {
                     sizeof(server_address));
 
     if (ret < 0) {
-        close(s_sock);
+        if (server_socket_close() < 0) {
+            perror("Server Socket Couldn't Close!");
+            return -2;
+        }
         perror("Socket Bind Fail");
         return -1;
     }
@@ -37,14 +40,18 @@ int server_object::server_socket_listen() {
     int ret = listen(s_sock, global_server_listen_maximum);
 
     if (ret < 0) {
-        close(s_sock);
+        if (server_socket_close() < 0) {
+            perror("Server Socket Couldn't Close !");
+            return -2;
+        }
         perror("Socket Listen Fail");
         return -1;
     }
     return 0;
 }
 
-void server_object::server_socket_start() {
+
+int server_object::server_socket_start() {
     socklen_t client_addr_size = sizeof(struct sockaddr_in);
 
     // prevent server from dying when writing to closed sockets.
@@ -62,11 +69,16 @@ void server_object::server_socket_start() {
 
         if (client_socket < 0) {
             std::cout << "Client Socket Accept Fail" << std::endl;
-            close(s_sock);
-            return;
+            server_socket_close();
+            return -1;
         } else {
             std::cout << "Client Accepted" << std::endl;
             new session_object(client_socket, &lock);
         }
     }
+    return 0;
+}
+
+int server_object::server_socket_close() {
+    return close(this->s_sock);
 }
