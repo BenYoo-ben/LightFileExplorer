@@ -14,8 +14,8 @@ class server_object{
     int server_socket_init();
     int server_socket_bind(uint16_t sPort);
     int server_socket_listen();
-
-    void server_socket_start();
+    int server_socket_start();
+    int server_socket_close();
 };
 
 #endif  // SERVER_INCLUDES_NETS_HPP_

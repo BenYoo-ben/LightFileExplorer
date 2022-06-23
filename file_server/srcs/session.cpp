@@ -41,30 +41,6 @@ int session_object::handle_request(char type,
                 }
 
                 uint32_t fTotalSize = fm.stat_get_size(&file_stat);
-/*
-                // can't send file larger than memory size this way
-                char send_buffer[kBufSize];
-
-                int fd = open(full_file.c_str(), O_RDONLY);
-
-                uint32_t data_size = file_size;
-                memset(send_buffer, 0x0, kBufSize);
-                memcpy(send_buffer, &data_size, 4);
-
-                int read_size = 0;
-                if ((read_size = read(fd, send_buffer+4, file_size)) < 0) {
-                    std::cout << "File Read Failed...\n" << std::endl;
-                    lock->remove_lock(lock->SOFT_LOCK, full_file);
-                    return -1;
-                } else {
-                    if (write(c_sock, send_buffer, 4 + file_size) < 0) {
-                        std::cout<< "Write Failed...\n" << std::endl;
-                        lock->remove_lock(lock->SOFT_LOCK, full_file);
-                        return -1;
-                    }
-                    close(fd);
-                    lock->remove_lock(lock->SOFT_LOCK, full_file);*/
-
 
                 if (write(c_sock, &fTotalSize, sizeof(uint32_t)) != sizeof(uint32_t)) {
                     perror("Writing File Size Failed");
