@@ -29,7 +29,6 @@ graph TD
 | Protocol Value              |    Field Name   | Protocol Type | Dir. Size            |      Directory       | Data Size               |        Data          |
 | --------------------------- | --------------- |------------- | -------------------- | -------------------- | ----------------------- | -------------------- |
 | FIELD SIZE>                 | -               |1 / byte      | 4 / uint32           | Dir. Size / string   | 4 / uint32              | Data Size / byte(s)  |
-| 0:REQ_TYPE_DIR_INFO_DEPTH_2 | Get File Tree 2 |0             | DirSize in uint32    | DirName in string    | 0                       | -                    |
 | 1:REQ_TYPE_DOWNLOAD_FILE    | Download File   |1             | DirSize in uint32    | DirName end with '/' | FileNameSize in uint32  | FileName with no path|
 | 2:REQ_TYPE_COPY_FILE        | Copy File       |2             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
 | 3:REQ_TYPE_MOVE_FILE        | Move File       |3             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
@@ -37,7 +36,11 @@ graph TD
 | 5:REQ_TYPE_RENAME_FILE      | Rename File     |5             | SrcNameSize in uint32| SrcFileName FullPath | DstNameSize in uint32   | DstFileName FullPath |
 | 6:REQ_TYPE_DIR_INFO_DEPTH_1 | Get Files in Dir|6             | DirSize in uint32    | DirName in string    | 0                       | -                    |
 | 7:REQ_TYPE_UPLOAD_FILE      | Upload File     |7             | DirSize in uint32    | DirName in string    | FileNameSize in uint32  | FileName with no path|
+| ~~0:REQ_TYPE_DIR_INFO_DEPTH_2~~ | ~~Get File Tree 2~~|~~0~~             | ~~DirSize in uint32~~    | ~~DirName in string~~   | ~~0~~ | -                    |
   
+  
+_Protocol:0 is deprecated(no longer used)_
+
     
   ### Session Handler: response scenario for each protocol type
 #### Short Example
@@ -78,7 +81,7 @@ DATA)
 | all bytes = 0x00 |  
   
   
-**Protocol: 0:REQ_TYPE_DIR_INFO_DEPTH_2, 6:REQ_TYPE_DIR_INFO_DEPTH_1**
+**Protocol:  6:REQ_TYPE_DIR_INFO_DEPTH_1**
 
 ```mermaid
 sequenceDiagram
