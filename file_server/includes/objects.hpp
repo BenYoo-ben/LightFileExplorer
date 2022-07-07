@@ -58,7 +58,7 @@ class directory_object {
 class json_handler{
  private:
  public:
-    int make_json_object(std::string dir_name, int depth, Json::Value *jsv);
+    int make_json_object(std::string dir_name, Json::Value *jsv);
 
     int directory_to_file_object_vector(std::string dir_name, std::vector<file_object> *vfObjPtr);
 };
