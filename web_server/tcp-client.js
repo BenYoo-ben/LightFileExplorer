@@ -267,23 +267,34 @@ class TCPClient {
             this.socket.write(buf);
             let recvBuf = new Buffer.alloc(4);
             // get ack from file server
+
+            var flag = false;
             this.socket.on('data', (data) => {
                 let ackVal = parseInt(data) >>> 0;
                 // make to unsigned
                 if (ackVal == 0) {
-                    var fstats = fs.statSync('./uploads/' + file);
-                    var fileSize = fstats.size >>> 0;
-                    var fSizeBuf = Buffer.alloc(4);
-                    fSizeBuf.writeInt32LE(fileSize, 0);
-                    this.socket.write(fSizeBuf);
-                    console.log('FILE SIZE : ' + fileSize);
-                    fs.readFile('./uploads/' + file, (err, data) => {
-                        if (err) {
-                            throw err;
-                        }
-                        this.socket.write(data);
-                        resolve('Upload Process Success');
-                    });
+                    if (flag == false) { 
+                        var fstats = fs.statSync('./uploads/' + file);
+                        var fileSize = fstats.size >>> 0;
+                        var fSizeBuf = Buffer.alloc(4);
+                        fSizeBuf.writeInt32LE(fileSize, 0);
+                        this.socket.write(fSizeBuf);
+                        console.log('FILE SIZE : ' + fileSize);
+                        fs.readFile('./uploads/' + file, (err, data) => {
+                            if (err) {
+                                throw err;
+                            }                         
+                        
+                            var writeResult = this.socket.write(data);
+
+                            if (writeResult) {
+                                reject("Write Failed");
+                            }
+                            flag = true;
+                        });
+                    } else if (flag == true) {
+                        resolve("Upload Process Done");
+                    }
                 } else {
                     reject('Upload Process Failed');
                 }
