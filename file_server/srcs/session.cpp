@@ -61,35 +61,47 @@ int session_object::handle_request(char type,
                     lock->remove_lock(lock->SOFT_LOCK, full_file);
                 }
 
-                int fileFd = open(full_file.c_str(), O_RDONLY);
+                FILE *filePtr = fopen(full_file.c_str(), "rb");
+
+                if (filePtr == nullptr) {
+                    perror("download open file fail");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
 
                 char sendBuffer[global_window_size];
 
                 uint32_t fSum = 0;
                 ssize_t readBytes = -1;
                 while (fSum < fTotalSize) {
-                    readBytes = read(fileFd, sendBuffer, global_window_size);
+                    readBytes = fread(sendBuffer, 1, global_window_size, filePtr);
 
                     if (readBytes <= 0) {
                         perror("READ FAILED WHILE READING FILE");
                         lock->remove_lock(lock->SOFT_LOCK, full_file);
-                        close(fileFd);
                         return -1;
                    
                     }
 
                    fSum += readBytes;
-
+                   
+                   // debug
                    printf("Written [%u / %u]\n", fSum, fTotalSize);
 
                    if (write(c_sock, sendBuffer, readBytes) != readBytes) {
                        perror("WRITE FAILED ON STREAM(download)");
                        lock->remove_lock(lock->SOFT_LOCK, full_file);
-                       close(fileFd);
+                       fclose(filePtr);
                        return -1;
                    }
                 }
-                close(fileFd);
+
+                if (fclose(filePtr) == EOF) {
+                    perror("download file close err");
+                    lock->remove_lock(lock->SOFT_LOCK, full_file);
+                    return -1;
+                }
+                
                 lock->remove_lock(lock->SOFT_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
@@ -106,28 +118,81 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->SOFT_LOCK, dir);
                 lock->add_lock(lock->HARD_LOCK, data);
 
-                // temporary using system command
+                // debug
                 printf("COPY <%s> to <%s> \n", dir.c_str(), data.c_str());
-                char command[1024];
-                snprintf(command, sizeof(command),
-                        "cp -r %s %s", dir.c_str(), data.c_str());
 
-                if (system(command) < 0) {
-                    std::cout << "system(copy) failed" << std::endl;
+                FILE *fromFile = fopen(dir.c_str(), "rb");
+                if (fromFile == nullptr) {
+                    perror("fromFile open failure");
                     lock->remove_lock(lock->SOFT_LOCK, dir);
                     lock->remove_lock(lock->HARD_LOCK, data);
                     return -1;
                 }
-                memset(command, 0x0, 4);
-                size_t ret = write(c_sock, command, 4);
+
+                FILE *toFile = fopen(data.c_str(), "wb");
+                if (toFile == nullptr) {
+                    perror("toFile open failure");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    lock->remove_lock(lock->HARD_LOCK, data);
+                    return -1;
+                }
+
+                char buff[global_window_size];
+                uint32_t rSize, wSize;
+                
+                // read --> write(chunk size)
+                while ((rSize = fread(buff, 1, global_window_size, fromFile)) == global_window_size) {
+                    wSize = fwrite(buff, 1, rSize, toFile);
+
+                    if (wSize != rSize) {
+                        perror("copy write fail");
+                        lock->remove_lock(lock->SOFT_LOCK, dir);
+                        lock->remove_lock(lock->HARD_LOCK, data);
+                        return -1;
+                    }
+
+                    rSize = 0;
+                    wSize = 0;
+                }
+                
+                // remaining read data
+                if (rSize > 0) {
+                    wSize = fwrite(buff, 1, rSize, toFile);
+                    
+                    if (wSize != rSize) {
+                        perror("copy write fail 2");
+                        lock->remove_lock(lock->SOFT_LOCK, dir);
+                        lock->remove_lock(lock->HARD_LOCK, data);
+                        return -1;
+                    }
+                }
+
+                if (fclose(fromFile) == EOF) {
+                    perror("fromfile fclose err");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    lock->remove_lock(lock->HARD_LOCK, data);
+                    return -1;
+                }
+
+                if (fclose(toFile) == EOF) {
+                    perror("tofile fclose err");
+                    lock->remove_lock(lock->SOFT_LOCK, dir);
+                    lock->remove_lock(lock->HARD_LOCK, data);
+                    return -1;
+                }
+
+                char ackSendBuffer[4] = { 0, };
+                size_t ret = write(c_sock, ackSendBuffer, 4);
                 if (ret != 4) {
                     perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    lock->remove_lock(lock->SOFT_LOCK ,dir);
+                    lock->remove_lock(lock->HARD_LOCK, data);
                     return -1;
                 }
 
                 lock->remove_lock(lock->SOFT_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
-
+                
                 break;
             }
         }
@@ -140,29 +205,28 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->HARD_LOCK, dir);
                 lock->add_lock(lock->HARD_LOCK, data);
 
-                // temporary using system command
+                // debug
                 printf("MOVE <%s> to <%s> \n", dir.c_str(), data.c_str());
-                char command[1024];
-                snprintf(command, sizeof(command),
-                        "mv %s %s", dir.c_str(), data.c_str());
 
-                if (system(command) <0) {
-                    std::cout << "system(move) failed" << std::endl;
+                if (rename(dir.c_str(), data.c_str()) != 0) {
+                    perror("rename in move failed");
                     lock->remove_lock(lock->HARD_LOCK, dir);
                     lock->remove_lock(lock->HARD_LOCK, data);
                     return -1;
                 }
-                memset(command, 0x0, 4);
-                size_t ret = write(c_sock, command, 4);
+
+                char ackSendBuffer[4] = { 0, };
+                size_t ret = write(c_sock, ackSendBuffer, 4);
                 if (ret != 4) {
                     perror(" REQ_TYPE_MOVE_FILE, write != 4");
+                    lock->remove_lock(lock->SOFT_LOCK ,dir);
+                    lock->remove_lock(lock->HARD_LOCK, data);
                     return -1;
                 }
 
-
                 lock->remove_lock(lock->HARD_LOCK, dir);
                 lock->remove_lock(lock->HARD_LOCK, data);
-
+                
                 break;
             }
         }
@@ -173,42 +237,52 @@ int session_object::handle_request(char type,
 
             if (lock->check_lock(lock->SOFT_LOCK, full_string)
                 && lock->check_lock(lock->HARD_LOCK, full_string)) {
-                // temporary using system command
-                printf("DELETE <%s> to <%s> \n", dir.c_str(), data.c_str());
-                char command[1024];
-                snprintf(command, sizeof(command),
-                        "rm -rf %s%s", dir.c_str(), data.c_str());
+                lock->add_lock(lock->HARD_LOCK, full_string);
 
-                if (system(command) < 0) {
-                    std::cout << "system(remove) failed " << std::endl;
-                    return -1;
+                // debug
+                printf("DELETE <%s> to <%s> \n", dir.c_str(), data.c_str());
+
+                if (remove(full_string.c_str()) != 0) {
+                    perror("delete remove failed");
+                    lock->remove_lock(lock->HARD_LOCK, full_string);
                 }
-                memset(command, 0x0, 4);
-                size_t ret = write(c_sock, command, 4);
+
+                char ackSendBuffer[4] = { 0, };
+                size_t ret = write(c_sock, ackSendBuffer, 4);
                 if (ret != 4) {
-                    perror(" REQ_TYPE_DELETE_FILE, write != 4");
+                    perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    lock->remove_lock(lock->HARD_LOCK ,dir);
                     return -1;
                 }
+
+                lock->remove_lock(lock->HARD_LOCK, full_string);
+
                 break;
             }
         }
         case REQ_TYPE_RENAME_FILE: {
             if (lock->check_lock(lock->SOFT_LOCK, dir)
                 && lock->check_lock(lock->HARD_LOCK, dir)) {
+                lock->add_lock(lock->HARD_LOCK, dir);
+
+                // debug
                 printf("RENAME <%s> to <%s> \n", dir.c_str(), data.c_str());
-                char command[1024];
-                snprintf(command, sizeof(command),
-                        "mv %s %s", dir.c_str(), data.c_str());
-                if (system(command) < 0) {
-                    std::cout << "system(rename) failed" << std::endl;
+
+                if (rename(dir.c_str(), data.c_str()) != 0) {
+                    perror("rename rename failed");
+                    lock->remove_lock(lock->HARD_LOCK, dir);
                     return -1;
                 }
-                memset(command, 0x0, 4);
-                size_t ret = write(c_sock, command, 4);
+                
+                char ackSendBuffer[4] = { 0, };
+                size_t ret = write(c_sock, ackSendBuffer, 4);
                 if (ret != 4) {
-                    perror(" REQ_TYPE_RENAME_FILE, write != 4");
+                    perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    lock->remove_lock(lock->SOFT_LOCK ,dir);
                     return -1;
                 }
+
+                lock->remove_lock(lock->HARD_LOCK, dir);
                 break;
             }
         }
@@ -257,7 +331,6 @@ int session_object::handle_request(char type,
                 // debug
                 printf("Sent Size : %u\n", 4 + buffer_size);
 
-
                 lock->remove_lock(lock->SOFT_LOCK, dir);
             } else {
                 // HARD LOCKED, can't read
@@ -270,7 +343,8 @@ int session_object::handle_request(char type,
             ss << dir << data;
             std::string full_file = ss.str();
 
-            if (lock->check_lock(lock->SOFT_LOCK, full_file) && lock->check_lock(lock->HARD_LOCK, full_file)) {
+            if (lock->check_lock(lock->SOFT_LOCK, full_file) 
+                && lock->check_lock(lock->HARD_LOCK, full_file)) {
                 lock->add_lock(lock->HARD_LOCK, full_file);
 
                 struct stat dummyStat;
@@ -309,7 +383,7 @@ int session_object::handle_request(char type,
                 size_t readBytes = -1;
                 while (fSum < temp) {
                    readBytes = read(c_sock, recvBuffer, global_window_size);
-                   if (readBytes <= 0) {
+                   if (readBytes < 0) {
                        perror("READ FAILED WHILE READING STREAM");
                        lock->remove_lock(lock->HARD_LOCK, full_file);
                        fclose(file);
@@ -317,6 +391,9 @@ int session_object::handle_request(char type,
                    }
 
                    fSum += readBytes;
+                   
+                   // debug
+                   printf("Written [%u / %u]\n", fSum, temp);
 
                    if (fwrite(recvBuffer, 1, readBytes, file) != readBytes) {
                        perror("WRITE FAILED WHILE PROCESSING STREAM");
@@ -325,8 +402,21 @@ int session_object::handle_request(char type,
                        return -1;
                    }
                 }
+                
+                if (fclose(file) == EOF) {
+                    perror("upload file close fail");
+                    lock->remove_lock(lock->HARD_LOCK, full_file);
+                    return -1;
+                }
 
-                fclose(file);
+                char ackSendBuffer[4] = { 0, };
+                ret = write(c_sock, ackSendBuffer, 4);
+                if (ret != 4) {
+                    perror(" REQ_TYPE_COPY_FILE, write != 4");
+                    lock->remove_lock(lock->SOFT_LOCK ,dir);
+                    return -1;
+                }
+                
                 lock->remove_lock(lock->HARD_LOCK, full_file);
             } else {
                 // HARD LOCKED, can't read
