@@ -124,6 +124,8 @@ sequenceDiagram
     Client->>Server: Send file data
     
     Server->>Server: Process stream into file    
+    
+    Server->>Client: Send ACK block after process is done
 ```
 
 **Protocol: 2:REQ_TYPE_COPY_FILE, 3:REQ_TYPE_MOVE_FILE, 4:REQ_TYPE_DELETE_FILE, 5:REQ_TYPE_RENAME_FILE**
