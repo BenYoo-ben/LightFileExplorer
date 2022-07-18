@@ -77,9 +77,8 @@ DATA)
   }
 ]
 ```
-#### Data Formats  
 
-**ACK Block**  
+**Protocol ACK Block**  
 | Field | ACK Block |
 | ----- | --------- |
 | Size  | 4 bytes |
