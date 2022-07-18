@@ -1,5 +1,10 @@
 ## network_file_explorer
+### [Build Manual](BuildManual.md)  
 -----------------------------------------------------
+### Source Code Diagram  
+(powered by Sourcetrail)
+![image](https://user-images.githubusercontent.com/57353430/179505518-d64e67be-1c35-49e3-b178-a0ef308bb20b.png)
+_____________________________________________________
 ### Brief Manual
 _____________________________________________________
   ### Server Process
