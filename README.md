@@ -11,7 +11,7 @@ File Server ->> Web Server: Do Operation & Send resp
 Web Server ->> User: Send Result
 ```
 ___________________________________
-## *Many More Detailes of each Process*  
+## *Many More Detailes about each Process*  
 ### [File Server Manual](file_server/README.md)  
 ### [Web Server Manual](web_server/README.md)  
 ____________________________________
