@@ -260,6 +260,9 @@ $(function () {
             // Directory size
             tr.append($('<td>').text('-').addClass('size'));
         } else {
+            if (json[i]['name'].charAt(0) === '.') {
+                continue;
+            }
             let td_icon = $('<td>');
             let ico = $('<img>');
 
