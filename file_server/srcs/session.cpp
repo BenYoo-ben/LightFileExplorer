@@ -84,9 +84,6 @@ int session_object::handle_request(char type,
                     }
 
                    fSum += readBytes;
-                   
-                   // debug
-                   printf("Written [%u / %u]\n", fSum, fTotalSize);
 
                    if (write(c_sock, sendBuffer, readBytes) != readBytes) {
                        perror("WRITE FAILED ON STREAM(download)");
@@ -110,16 +107,11 @@ int session_object::handle_request(char type,
         break;
         }
         case REQ_TYPE_COPY_FILE: {
-            // need only readlock(copy basically makes a new file)
-            // check lock for file to be copied and a directory it's going into.
             if (lock->check_lock(lock->HARD_LOCK, dir)
                 && lock->check_lock(lock->SOFT_LOCK, data)
                 && lock->check_lock(lock->HARD_LOCK, data)) {
                 lock->add_lock(lock->SOFT_LOCK, dir);
                 lock->add_lock(lock->HARD_LOCK, data);
-
-                // debug
-                printf("COPY <%s> to <%s> \n", dir.c_str(), data.c_str());
 
                 FILE *fromFile = fopen(dir.c_str(), "rb");
                 if (fromFile == nullptr) {
@@ -205,9 +197,6 @@ int session_object::handle_request(char type,
                 lock->add_lock(lock->HARD_LOCK, dir);
                 lock->add_lock(lock->HARD_LOCK, data);
 
-                // debug
-                printf("MOVE <%s> to <%s> \n", dir.c_str(), data.c_str());
-
                 if (rename(dir.c_str(), data.c_str()) != 0) {
                     perror("rename in move failed");
                     lock->remove_lock(lock->HARD_LOCK, dir);
@@ -239,9 +228,6 @@ int session_object::handle_request(char type,
                 && lock->check_lock(lock->HARD_LOCK, full_string)) {
                 lock->add_lock(lock->HARD_LOCK, full_string);
 
-                // debug
-                printf("DELETE <%s> to <%s> \n", dir.c_str(), data.c_str());
-
                 if (remove(full_string.c_str()) != 0) {
                     perror("delete remove failed");
                     lock->remove_lock(lock->HARD_LOCK, full_string);
@@ -264,9 +250,6 @@ int session_object::handle_request(char type,
             if (lock->check_lock(lock->SOFT_LOCK, dir)
                 && lock->check_lock(lock->HARD_LOCK, dir)) {
                 lock->add_lock(lock->HARD_LOCK, dir);
-
-                // debug
-                printf("RENAME <%s> to <%s> \n", dir.c_str(), data.c_str());
 
                 if (rename(dir.c_str(), data.c_str()) != 0) {
                     perror("rename rename failed");
@@ -304,11 +287,6 @@ int session_object::handle_request(char type,
 
                 int buffer_size = json_str.length();
 
-                std::cout << "SENT :" << buffer_size << std::endl;
-
-                // disable printing contents --> stdout
-                // std::cout << "CONTENT:" << json_str << std::endl;
-
                 const int kBufSize = 4 + buffer_size + 1;
                 char send_buffer[kBufSize];
 
@@ -316,8 +294,6 @@ int session_object::handle_request(char type,
                 uint32_t data_size = buffer_size;
 
                 memcpy(send_buffer, &data_size, 4);
-
-                printf("JSON_STR LEN: %u\n", json_str.length());
 
                 snprintf(send_buffer + 4, sizeof(send_buffer) - 4,
                         "%s", json_str.c_str());
@@ -327,9 +303,6 @@ int session_object::handle_request(char type,
                     lock->remove_lock(lock->SOFT_LOCK, dir);
                     return -1;
                 }
-
-                // debug
-                printf("Sent Size : %u\n", 4 + buffer_size);
 
                 lock->remove_lock(lock->SOFT_LOCK, dir);
             } else {
@@ -392,9 +365,6 @@ int session_object::handle_request(char type,
 
                    fSum += readBytes;
                    
-                   // debug
-                   printf("Written [%u / %u]\n", fSum, temp);
-
                    if (fwrite(recvBuffer, 1, readBytes, file) != readBytes) {
                        perror("WRITE FAILED WHILE PROCESSING STREAM");
                        lock->remove_lock(lock->HARD_LOCK, full_file);
@@ -494,15 +464,6 @@ void *session_object::run() {
             data_buffer[kBufferSize2 - 1] ='\0';
             data_str = std::string(data_buffer);
 
-            // Debug parse input protocol
-            std::cout << "RECEIVED:"
-            << "\ntype: " << static_cast<int>(type)
-            << "\ndir_size: " << dir_size
-            << "\ndir : " << dir_str
-            << "\ndata_size : " << data_size
-            << "\ndata : "<< data_str
-            << std::endl;
-
             if (handle_request(type, dir_str, data_str, c_sock) < 0) {
                 // errCode = 7
                 uint32_t errCode = 0x07;
@@ -517,8 +478,6 @@ void *session_object::run() {
     close_socket();
     std::cout<< "Socket Closed ! \n" << std::endl;
     delete(this);
-    std::cout << "Delete Memory Allocated ! \n" << std::endl;
-
     return NULL;
 }
 

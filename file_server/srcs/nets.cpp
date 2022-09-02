@@ -62,17 +62,13 @@ int server_object::server_socket_start() {
     while (true) {
         struct sockaddr_in client_addr;
 
-        std::cout << "waiting..." << std::endl;
-
         int client_socket = accept(s_sock, (struct sockaddr*) &client_addr,
                                     &client_addr_size);
 
         if (client_socket < 0) {
-            std::cout << "Client Socket Accept Fail" << std::endl;
             server_socket_close();
             return -1;
         } else {
-            std::cout << "Client Accepted" << std::endl;
             new session_object(client_socket, &lock);
         }
     }
