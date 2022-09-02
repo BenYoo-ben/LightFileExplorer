@@ -476,7 +476,6 @@ void *session_object::run() {
         }
     }
     close_socket();
-    std::cout<< "Socket Closed ! \n" << std::endl;
     delete(this);
     return NULL;
 }

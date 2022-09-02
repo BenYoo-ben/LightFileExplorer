@@ -8,9 +8,7 @@ int file_manager::files_in_directory_to_vector(std::string string_dir_name, std:
     DIR *dir;
     struct dirent *ent;
     if ((dir = opendir(dir_name)) != NULL) {
-  // print all the files and directories within directory
         while ((ent = readdir(dir)) != NULL) {
-            // printf("FILE[%s] : %s\n",string_dir_name.c_str(),ent->d_name);
             if (strcmp(ent->d_name, ".") && strcmp(ent->d_name, "..")) {
                 file_names.push_back(std::string(ent->d_name));
             }
@@ -51,22 +49,20 @@ bool file_manager::stat_is_directory(struct stat *st) {
 }
 
 std::string file_manager::stat_get_time(struct stat *st) {
-    struct tm *mtime;
+    struct tm mtime;
     // Thread Safe (localtime --> localtime_r)
-    mtime = (struct tm *)malloc(sizeof(struct tm));
 
-    localtime_r(&st->st_mtime, mtime);
+    localtime_r(&st->st_mtime, &mtime);
 
     char str_buffer[256];
 
     snprintf(str_buffer, sizeof(str_buffer), "%04d-%02d-%02d %02d:%02d",
-        mtime->tm_year+1900,
-        mtime->tm_mon+1,
-        mtime->tm_mday,
-        mtime->tm_hour,
-        mtime->tm_min);
+        mtime.tm_year+1900,
+        mtime.tm_mon+1,
+        mtime.tm_mday,
+        mtime.tm_hour,
+        mtime.tm_min);
 
-    free(mtime);
     return std::string(str_buffer);
 }
 
