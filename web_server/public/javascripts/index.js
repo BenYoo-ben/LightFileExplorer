@@ -392,9 +392,7 @@ $(function () {
                 $('#newName').removeClass('is-invalid');
                 $('#newName').removeClass('is-valid');
             });
-            dropdown_menu.append(li_delete);
             dropdown_menu.append(li_move);
-            dropdown_menu.append(li_copy);
             dropdown_menu.append(li_rename);
         }
 
