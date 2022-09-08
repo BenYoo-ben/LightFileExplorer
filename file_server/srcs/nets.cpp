@@ -65,11 +65,19 @@ int server_object::server_socket_start() {
         int client_socket = accept(s_sock, (struct sockaddr*) &client_addr,
                                     &client_addr_size);
 
+
         if (client_socket < 0) {
             server_socket_close();
             return -1;
         } else {
-            new session_object(client_socket, &lock);
+            char clientIpAddrStr[global_expected_ip_length] = {0, };
+            if (inet_ntop(AF_INET, &client_addr, clientIpAddrStr, sizeof(clientIpAddrStr)) != NULL) {
+                fprintf(stdout, "Connected From :[%s]\n", clientIpAddrStr); 
+                new session_object(client_socket, &lock);
+            } else {
+                perror("Client Socket IP Unknown");
+                return -1;
+            }
         }
     }
     return 0;
