@@ -1,0 +1,9 @@
+[user]
+	email = neverknown0909@gmail.com
+	name = BenYoo-ben
+[credentail]
+	helper = cache
+[diff]
+	tool = vimdiff
+[difftool]
+	prompt = false
