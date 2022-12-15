@@ -20,4 +20,4 @@ jobs:
     - name: Build Test
       run: cd file_server/ && make test
     - name: Run Test
-      run: cd file_server/ && ./TEST
+      run: cd file_server/ && sudo ./TEST
