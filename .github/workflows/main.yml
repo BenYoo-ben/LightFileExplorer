@@ -16,4 +16,4 @@ jobs:
     - name: make
       run: cd file_server/ && make
     - name: Run Test
-      run: make test
+      run: cd file_server/ && make test
