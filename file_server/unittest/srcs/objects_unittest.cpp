@@ -42,11 +42,6 @@ TEST (JSON_HANDLER, MAKE_JSON_OBJECT) {
     bool is1Found = false;
     for (auto itr : jv) {
         if (itr["name"] == "1") {
-            if (itr["auth"] != "rw-r--r--") {
-                printf("auth FAIL! ::: %s\n", itr["auth"].asString().c_str());
-                break;
-            }
-
             if (itr["size"] != "512") {
                 printf("size fail! ::: %s\n", itr["size"].asString().c_str());
                 break;

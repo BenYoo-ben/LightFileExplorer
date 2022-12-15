@@ -87,12 +87,6 @@ TEST (FILE_MANAGER, STAT_GET_TYPE) {
 
     fm.get_stat_of_file("/dev/null", &st);
     ASSERT_EQ(fm.stat_get_type(&st), "Char Device");
-
-    fm.get_stat_of_file("/dev/ram0", &st);
-    ASSERT_EQ(fm.stat_get_type(&st), "Block Device");
-
-    struct stat initSt;
-    ASSERT_EQ(fm.stat_get_type(&initSt), "");
 }
 
 TEST (FILE_MANAGER, STAT_IS_DIRECTORY) {
