@@ -12,6 +12,8 @@ jobs:
     steps:
     - name: Install gtest manually
       run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
+    - name: Install jsoncpp manually
+      run: sudo apt-get install libjsoncpp-dev
     - uses: actions/checkout@v1
     - name: make
       run: cd file_server/ && make
