@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install gtest manually
-      run: sudo apt-get install libgtest-dev
+      run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
     - uses: actions/checkout@v1
     - name: make
       run: cd file_server/ && make
