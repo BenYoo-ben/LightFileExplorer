@@ -2,9 +2,9 @@ name: test_master_branch
 
 on:
   push:
-    branches: [ add-github-action ]
+    branches: [ master ]
   pull_request:
-    branches: [ add-github-action ]
+    branches: [ master ]
 
 jobs:
   build:
