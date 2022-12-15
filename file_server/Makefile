@@ -8,14 +8,10 @@ COMPILE_DEBUG := -Wall -std=c++14 -Wno-psabi -fprofile-arcs -ftest-coverage
 LDFLAGS := -lpthread -ljsoncpp
 LDFLAGS_RELEASE := -lpthread -ljsoncpp
 
-
-STATICLDFLAGS := -L./ext_libs
-
 ##########################################
 
 
 ############### DIR & FILES ##############
-EXT_DIR := ./ext_libs
 INC_DIR := ./includes/
 OBJ_DIR_DEBUG := ./objs
 OBJ_DIR_RELEASE := ./objs_release
@@ -33,6 +29,8 @@ GTEST_OUTPUT := ./unittest
 GTEST_DIR := ./unittest/srcs
 GTEST_HEADERS := ./unittest/includes/*.h \
 
+GTEST_LIB_DIR := /usr/src/gtest/lib
+
 UNITTEST_SRC_FILES := $(wildcard $(GTEST_DIR)/*.cpp)
 UNITTEST_OBJ_FILES := $(patsubst $(GTEST_DIR)/%.cpp, $(OBJ_DIR_DEBUG)/%.o, $(UNITTEST_SRC_FILES))
 
@@ -48,7 +46,7 @@ TARGET := fs_server
 debug : $(TARGET)
 
 $(TARGET) : $(OBJ_FILES_DEBUG)
-		$(CC) -o $@ $^ -I $(INC_DIR) -lgcov $(LDFLAGS) $(STATICLDFLAGS)
+		$(CC) -o $@ $^ -I $(INC_DIR) -lgcov $(LDFLAGS)
 
 $(OBJ_DIR_DEBUG)/%.o : $(SRC_DIR)/%.cpp
 	mkdir -p $(OBJ_DIR_DEBUG)
@@ -63,7 +61,7 @@ RELEASE := fs_server.$(shell date '+%Y%m%d')
 release : $(RELEASE)
 
 $(RELEASE) : $(OBJ_FILES_RELEASE)
-		$(CC) -o $@ $^ -I $(INC_DIR) $(LDFLAGS_RELEASE) $(STATICLDFLAGS)
+		$(CC) -o $@ $^ -I $(INC_DIR) $(LDFLAGS_RELEASE)
 
 $(OBJ_DIR_RELEASE)/%.o : $(SRC_DIR)/%.cpp
 	mkdir -p $(OBJ_DIR_RELEASE)
@@ -77,7 +75,7 @@ TEST := TEST
 test : $(TEST)
 
 $(TEST): $(UNITTEST_OBJ_FILES)
-	$(CC) $(COMPILE_DEBUG) $(LDFLAGS) $^ $(NONE_MAIN_OBJS) $(EXT_DIR)/libgtest_main.a $(EXT_DIR)/libgtest.a -o $@
+	$(CC) $(COMPILE_DEBUG) $(NONE_MAIN_OBJS) $^ $(GTEST_LIB_DIR)/libgtest_main.a $(GTEST_LIB_DIR)/libgtest.a -o $@ $(LDFLAGS)
 
 $(OBJ_DIR_DEBUG)/%.o: $(GTEST_DIR)/%.cpp
 	$(CC) $(COMPILE_DEBUG) -lgcov -I $(INC_DIR) -c -o $@ $<
