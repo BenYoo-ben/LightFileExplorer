@@ -1,0 +1,23 @@
+name: test_master_branch
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install gtest manually
+      run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
+    - name: Install jsoncpp manually
+      run: sudo apt-get install libjsoncpp-dev
+    - uses: actions/checkout@v1
+    - name: make
+      run: cd file_server/ && make
+    - name: Build Test
+      run: cd file_server/ && make test
+    - name: Run Test
+      run: cd file_server/ && sudo ./TEST

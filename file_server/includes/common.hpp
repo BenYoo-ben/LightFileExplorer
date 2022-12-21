@@ -1,7 +1,7 @@
 #ifndef SERVER_INCLUDES_COMMON_HPP_
 #define SERVER_INCLUDES_COMMON_HPP_
 
-#include <json/json.h>
+#include <jsoncpp/json/json.h>
 #include <time.h>
 #include <stdint.h>
 #include <stdlib.h>
