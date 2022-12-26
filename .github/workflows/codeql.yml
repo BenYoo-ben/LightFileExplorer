@@ -63,10 +63,19 @@ jobs:
       uses: github/codeql-action/autobuild@v2
 
     - if: matrix.language == 'cpp'
-      name: Build CPP
+      name: CPP Build
       run: |
-        cd ./file_server/
-        make
+        - name: Install gtest manually
+          run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
+        - name: Install jsoncpp manually
+          run: sudo apt-get install libjsoncpp-dev
+        - uses: actions/checkout@v1
+        - name: make
+          run: cd file_server/ && make
+        - name: Build Test
+          run: cd file_server/ && make test
+        - name: Run Test
+          run: cd file_server/ && sudo ./TEST
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
 
