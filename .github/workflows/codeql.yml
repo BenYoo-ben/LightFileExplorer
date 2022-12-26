@@ -41,7 +41,7 @@ jobs:
       run: |
         sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
         sudo apt-get install libjsoncpp-dev
-        make
+        cd - && cd file_server && make
 
   
     - name: Perform CodeQL Analysis
