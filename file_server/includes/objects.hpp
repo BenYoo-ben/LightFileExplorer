@@ -12,7 +12,7 @@ class directory_object;
 class file_object;
 
 class file_object {
- private:
+private:
     std::string name;
     std::string time;
     std::string type;
@@ -20,9 +20,9 @@ class file_object {
     uint64_t size;
     bool is_dir;
 
- public:
+public:
     file_object(std::string name, std::string time,
-                std::string auth, std::string size, std::string is_dir);
+            std::string auth, std::string size, std::string is_dir);
 
     void print_members();
 
@@ -42,13 +42,13 @@ class file_object {
 };
 
 class directory_object {
- private:
+private:
     std::vector<std::vector<file_object>> dir;
     std::string directory_path;
 
- public:
+public:
     directory_object(std::vector<std::vector<file_object>> parsed_json,
-                     std::string directory_path);
+            std::string directory_path);
 
     int get_vectors(std::vector<std::vector<file_object>> *vvfObjPtr);
 
@@ -56,18 +56,18 @@ class directory_object {
 };
 
 class json_handler{
- private:
- public:
+private:
+public:
     int make_json_object(std::string dir_name, Json::Value *jsv);
 
     int directory_to_file_object_vector(std::string dir_name, std::vector<file_object> *vfObjPtr);
 };
 
 class lock_handler{
- private:
+private:
     std::map<std::string, int> soft_lock;  // read
     std::map<std::string, int> hard_lock;  // write
- public:
+public:
     int SOFT_LOCK = 1;
     int HARD_LOCK = 2;
     lock_handler();
@@ -77,49 +77,3 @@ class lock_handler{
     void debug_lock();
 };
 #endif  // SERVER_INCLUDES_OBJECTS_HPP_
-   /* Sample json object:
-    {
-        [
-            {
-                "name":"system.so",
-                "time":"2021-12-15-10-04-01",
-                "size":"1723123" (in bytes),
-                "is_dir":"0",
-            },
-            
-            [
-                //first object is directory itself.
-                {
-                "name":"bin"
-                "time":"",
-                "size":"",
-                "is_dir":"1"
-                },
-                
-                {
-                "name":"iptables",
-                "time":"2011-10-30-10-04-01",
-                "size":"12345" (in bytes),
-                "is_dir":"0",
-                },
-
-                                {
-                "name":"ebtables",
-                "time":"2011-10-30-10-04-01",
-                "size":"12345" (in bytes),
-                "is_dir":"0",
-                },
-
-                                {
-                "name":"test",
-                "time":"2011-10-30-10-04-01",
-                "size":"12345" (in bytes),
-                "is_dir":"0",
-                }
-
-
-            ]
-        ]
-            
-    }
-    */

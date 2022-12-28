@@ -13,21 +13,21 @@
 #include "common.hpp"
 
 class file_manager{
- private:
- public:
-int files_in_directory_to_vector(std::string string_dir_name, std::vector<std::string> *vStr);
+private:
+public:
+    int files_in_directory_to_vector(std::string string_dir_name, std::vector<std::string> *vStr);
 
-int get_stat_of_file(std::string file_name, struct stat *st);
+    int get_stat_of_file(std::string file_name, struct stat *st);
 
-std::string stat_get_type(struct stat *st);
+    std::string stat_get_type(struct stat *st);
 
-bool stat_is_directory(struct stat *st);
+    bool stat_is_directory(struct stat *st);
 
-std::string stat_get_time(struct stat *st);
+    std::string stat_get_time(struct stat *st);
 
-int stat_get_size(struct stat *st);
+    int stat_get_size(struct stat *st);
 
-std::string stat_get_permission(struct stat *st);
+    std::string stat_get_permission(struct stat *st);
 };
 
 

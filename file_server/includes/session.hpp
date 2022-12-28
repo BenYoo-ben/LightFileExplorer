@@ -12,18 +12,17 @@
 #include "objects.hpp"
 
 class session_object{
- private:
+private:
     std::string ID;
-// client socket
     int c_sock;
 
     pthread_t session_thread;
     lock_handler *lock;
 
- public:
+public:
     session_object(int established_socket, lock_handler *lock);
     int handle_request(char type, std::string dir, std::string data,
-                                                    int client_socket);
+            int client_socket);
     void close_socket();
     void *run();
 };
