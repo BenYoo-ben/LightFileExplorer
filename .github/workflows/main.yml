@@ -2,9 +2,9 @@ name: test_master_branch
 
 on:
   push:
-    branches: [ patch-file-server ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ patch-file-server ]
+    branches: [ "master" ]
 
 jobs:
   build:
