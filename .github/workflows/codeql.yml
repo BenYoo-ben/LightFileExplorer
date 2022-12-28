@@ -36,7 +36,8 @@ jobs:
       name: Autobuild
       uses: github/codeql-action/autobuild@v2
     
-    - name: SetUp CPP build dependency
+    - if: matrix.language == 'cpp'
+      name: SetUp CPP build dependency
       run: |
         sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
         sudo apt-get install libjsoncpp-dev
