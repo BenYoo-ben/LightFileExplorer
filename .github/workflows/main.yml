@@ -2,9 +2,9 @@ name: test_master_branch
 
 on:
   push:
-    branches: [ master ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ master ]
+    branches: [ "master" ]
 
 jobs:
   build:
@@ -15,9 +15,7 @@ jobs:
     - name: Install jsoncpp manually
       run: sudo apt-get install libjsoncpp-dev
     - uses: actions/checkout@v1
-    - name: make
-      run: cd file_server/ && make
-    - name: Build Test
-      run: cd file_server/ && make test
+    - name: build
+      run: cd file_server/ && cmake . && make
     - name: Run Test
-      run: cd file_server/ && sudo ./TEST
+      run: cd file_server/ && sudo ./fs_server_test

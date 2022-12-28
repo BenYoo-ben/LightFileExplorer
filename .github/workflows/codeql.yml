@@ -35,13 +35,16 @@ jobs:
     - if: matrix.language == 'javascript'
       name: Autobuild
       uses: github/codeql-action/autobuild@v2
-
+    
     - if: matrix.language == 'cpp'
-      name: CPP Build
+      name: SetUp CPP build dependency
       run: |
         sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
         sudo apt-get install libjsoncpp-dev
-        cd - && cd file_server && make
+
+    - if: matrix.language == 'cpp'
+      name: CPP Build
+      uses: github/codeql-action/autobuild@v2
 
   
     - name: Perform CodeQL Analysis
