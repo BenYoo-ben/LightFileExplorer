@@ -38,10 +38,7 @@ jobs:
 
     - if: matrix.language == 'cpp'
       name: CPP Build
-      run: |
-        sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make
-        sudo apt-get install libjsoncpp-dev
-        cd - && cd file_server && make
+      uses: github/codeql-action/autobuild@v2
 
   
     - name: Perform CodeQL Analysis
