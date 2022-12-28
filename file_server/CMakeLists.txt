@@ -47,8 +47,9 @@ add_executable(fs_server_test ${fs_server_test_SRC})
 target_include_directories(fs_server PUBLIC includes)
 target_link_libraries(fs_server PUBLIC pthread jsoncpp)
 
+target_compile_options(fs_server_lib PUBLIC -g -fprofile-arcs -ftest-coverage -Wall -Wno-psabi)
 target_include_directories(fs_server_lib PUBLIC includes)
-target_link_libraries(fs_server_lib PUBLIC pthread jsoncpp)
+target_link_libraries(fs_server_lib PUBLIC pthread jsoncpp gcov)
 
 target_include_directories(fs_server_test PUBLIC includes unittest/includes)
-target_link_libraries(fs_server_test PUBLIC fs_server_lib gtest pthread jsoncpp libgtest_main.a libgtest.a)
+target_link_libraries(fs_server_test PUBLIC fs_server_lib gtest gcov pthread jsoncpp libgtest_main.a libgtest.a)

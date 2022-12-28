@@ -34,10 +34,9 @@ std::string file_manager::stat_get_type(struct stat *st) {
         return std::string("File");
     } else if (S_ISCHR(st->st_mode)) {
         return std::string("Char Device");
-    } else if (S_ISBLK(st->st_mode)) {
-        return std::string("Block Device");
-    } 
-    return "";
+    } else {
+        return "";
+    }
 }
 
 bool file_manager::stat_is_directory(struct stat *st) {
