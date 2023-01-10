@@ -101,64 +101,57 @@ int json_handler::make_json_object(std::string dir_name, Json::Value *jvPtr) {
     return 0;
 }
 
-lock_handler::lock_handler() {
-    soft_lock = std::map<std::string, int>();
-    hard_lock = std::map<std::string, int>();
-}
+bool lock_handler::add_lock(file_lock f_lock) {
+    auto value = locks.find(f_lock);
 
-void lock_handler::add_lock(int lock_no, std::string full_name) {
-    std::map<std::string, int> *lock = nullptr;
+    if (value == locks.end()) {
+        locks[f_lock] = true;
+        return true;
+    } 
 
-    if (lock_no == SOFT_LOCK) {
-        lock = &soft_lock;
-    } else if (lock_no == HARD_LOCK) {
-        lock = &hard_lock;
-    }
-
-    if ((*lock).count(full_name)) {
-        int value = (*lock)[full_name];
-        value++;
-        (*lock)[full_name] = value;
-        return;
+    if (value->second == false) {
+        locks[f_lock] = true;
     } else {
-        (*lock)[full_name] = 1;
-        return;
-    }
-}
-
-void lock_handler::remove_lock(int lock_no, std::string full_name) {
-    std::map<std::string, int> *lock = nullptr;
-
-    if (lock_no == SOFT_LOCK) {
-        lock = &soft_lock;
-    } else if (lock_no == HARD_LOCK) {
-        lock = &hard_lock;
-    }
-
-    if ((*lock).count(full_name)) {
-        int value = (*lock)[full_name];
-
-        if (value == 1) {
-            (*lock).erase(full_name);
-        } else {
-            value--;
-            (*lock)[full_name] = value;
-        }
-        return;
-    }
-}
-bool lock_handler::check_lock(int lock_no, std::string full_name) {
-    const std::map<std::string, int> *lock = nullptr;
-
-    if (lock_no == SOFT_LOCK) {
-        lock = &soft_lock;
-    } else if (lock_no == HARD_LOCK) {
-        lock = &hard_lock;
-    }
-
-    if ((*lock).count(full_name)) {
+        fprintf(stderr, "[ERR] TRIED TO RE-LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
         return false;
+    }
+
+    return true;
+}
+
+bool lock_handler::remove_lock(file_lock f_lock) {
+    auto value = locks.find(f_lock);
+
+    if (value == locks.end()) {
+        fprintf(stderr, "[ERR] TRIED TO UNLOCK UNKNOWN LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
+        return false;
+    } 
+
+    if (value->second == true) {
+        locks[f_lock] = false;
     } else {
+        fprintf(stderr, "[ERR] TRIED TO UNLOCK FALSE LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
+        return false;
+    }
+
+    return true;
+}
+
+
+bool lock_handler::check_lock(file_lock f_lock) {
+    auto value = locks.find(f_lock);
+
+    if (value != locks.end() && value->second == true) {
         return true;
     }
+    return false;
+}
+
+bool session_lock::add_lock(file_lock f_lock) {
+    if (lock_handler::get_instance().add_lock(f_lock) != true) {
+        return false;
+    }
+
+    pocket.push(f_lock);
+    return true;
 }

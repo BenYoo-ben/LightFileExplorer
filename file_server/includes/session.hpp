@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <stack>
 
 #include "common.hpp"
 #include "global.hpp"
@@ -17,14 +18,45 @@ private:
     int c_sock;
 
     pthread_t session_thread;
-    lock_handler *lock;
 
 public:
-    session_object(int established_socket, lock_handler *lock);
-    int handle_request(char type, std::string dir, std::string data,
-            int client_socket);
+    session_object() = default;
+    session_object(int established_socket);
+
+    session_object(const session_object& other) {
+        this->ID = other.ID;
+        this->c_sock = other.c_sock;
+    }
+
+    session_object& operator=(const session_object& other) {
+        if (this != &other) {
+            this->ID = other.ID;
+            this->c_sock = other.c_sock;
+        }
+        return *this;
+    }
+
+    session_object(session_object&&) = default;
+    session_object& operator=(session_object&&) = default;
+
+    ~session_object() 
+    {
+        close_socket();
+    }
+
+    int handle_request(char type, std::string dir, std::string data);
+
     void close_socket();
     void *run();
+
+    int handleDownload(session_lock& s_locks, std::string dir, std::string data);
+    int handleCopy(session_lock& s_locks, std::string dir, std::string data);
+    int handleMove(session_lock& s_locks, std::string dir, std::string data);
+    int handleDelete(session_lock& s_locks, std::string dir, std::string data);
+    int handleRename(session_lock& s_locks, std::string dir, std::string data);
+    int handleDirInfoD1(session_lock& s_locks, std::string dir, std::string data);
+    int handleUpload(session_lock& s_locks, std::string dir, std::string data);
+
 };
 
 #endif  // SERVER_INCLUDES_SESSION_HPP_

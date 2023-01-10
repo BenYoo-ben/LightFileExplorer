@@ -57,8 +57,6 @@ int server_object::server_socket_start() {
     // prevent server from dying when writing to closed sockets.
     signal(SIGPIPE, SIG_IGN);
 
-    static lock_handler lock = lock_handler();
-
     while (true) {
         struct sockaddr_in client_addr;
 
@@ -73,7 +71,7 @@ int server_object::server_socket_start() {
             char clientIpAddrStr[global_expected_ip_length] = {0, };
             if (inet_ntop(AF_INET, &client_addr, clientIpAddrStr, sizeof(clientIpAddrStr)) != NULL) {
                 fprintf(stdout, "Connected From :[%s]\n", clientIpAddrStr); 
-                new session_object(client_socket, &lock);
+                new session_object(client_socket);
             } else {
                 perror("Client Socket IP Unknown");
                 return -1;

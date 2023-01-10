@@ -6,11 +6,20 @@
 #include <signal.h>
 
 class server_object{
- private:
-// server socket;
+private:
     int s_sock;
 
- public:
+public:
+    server_object() = default;
+
+    server_object(const server_object&) = default;
+    server_object& operator=(const server_object&) = default;
+
+    server_object(server_object&&) = default;
+    server_object& operator=(server_object&&) = default;
+
+    ~server_object() = default;
+
     int server_socket_init();
     int server_socket_bind(uint16_t sPort);
     int server_socket_listen();

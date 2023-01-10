@@ -15,6 +15,16 @@
 class file_manager{
 private:
 public:
+    file_manager() = default;
+   
+    file_manager(const file_manager&) = default;
+    file_manager& operator=(const file_manager&) = default;
+
+    file_manager(file_manager&&) = default;
+    file_manager& operator=(file_manager&&) = default;
+    
+    ~file_manager() = default;
+
     int files_in_directory_to_vector(std::string string_dir_name, std::vector<std::string> *vStr);
 
     int get_stat_of_file(std::string file_name, struct stat *st);

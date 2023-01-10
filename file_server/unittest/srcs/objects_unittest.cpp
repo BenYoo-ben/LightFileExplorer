@@ -64,75 +64,73 @@ TEST (JSON_HANDLER, MAKE_JSON_OBJECT) {
 }
 
 TEST (OBJECTS, TEST_LOCK) {
-    lock_handler lh;
-
     std::string testString("TESTSTRING");
 
     // Initial State
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.add_lock(lh.SOFT_LOCK, testString);
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::READ, testString));
 
     // S(1) H(0)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), false);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.remove_lock(lh.SOFT_LOCK, testString);
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::READ, testString));
 
     // S(0) H(0)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.add_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(0) H(1)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), true);
 
-    lh.remove_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(0) H(0)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.add_lock(lh.SOFT_LOCK, testString);
-    lh.add_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::READ, testString));
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(1) H(1)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), false);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), true);
 
-    lh.remove_lock(lh.SOFT_LOCK, testString);
-    lh.remove_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::READ, testString));
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(0) H(0)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.add_lock(lh.SOFT_LOCK, testString);
-    lh.add_lock(lh.SOFT_LOCK, testString);
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::READ, testString));
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::READ, testString));
 
-    lh.add_lock(lh.HARD_LOCK, testString);
-    lh.add_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::WRITE, testString));
+    lock_handler::get_instance().add_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(2) H(2)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), false);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), true);
 
-    lh.remove_lock(lh.SOFT_LOCK, testString);
-    lh.remove_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::READ, testString));
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(1) H(1)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), false);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 
-    lh.remove_lock(lh.SOFT_LOCK, testString);
-    lh.remove_lock(lh.HARD_LOCK, testString);
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::READ, testString));
+    lock_handler::get_instance().remove_lock(file_lock(lock_handler::WRITE, testString));
 
     // S(0) H(0)
-    ASSERT_EQ(lh.check_lock(lh.SOFT_LOCK, testString), true);
-    ASSERT_EQ(lh.check_lock(lh.HARD_LOCK, testString), true);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, testString)), false);
+    ASSERT_EQ(lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, testString)), false);
 }
 
 
