@@ -34,7 +34,7 @@ int session_object::handle_request(char type, std::string dir, std::string data)
         case REQ_TYPE_UPLOAD_FILE: 
             return handleUpload(s_lock, dir, data);
         default: 
-            std::cout << "Unrecognized Code : " << type << std::endl;
+            std::cerr << "Unrecognized Code : " << type << std::endl;
             break;
     }
     return 0;
@@ -51,7 +51,7 @@ void *session_object::run() {
 
         bytes_read = read(c_sock, buffer, global_expected_MTU);
         if (bytes_read <= 0) {
-            perror("SocketReadERR");
+            std::cerr << "Socket Read failed" << std::endl;
             break;
         } else if (bytes_read == 0) {
             // test if socket is open(without this check,
@@ -62,10 +62,10 @@ void *session_object::run() {
 
             int err = write(c_sock, test_buffer, 1);
             if (err < 0) {
-                std::cout<< "Socket Closed on Client Side ! \n" << std::endl;
+                std::cerr<< "Socket Closed on Client Side ! \n" << std::endl;
                 break;
             } else {
-                std::cout << "Socket recvd EOF" << std::endl;
+                std::cerr << "Socket recvd EOF" << std::endl;
                 continue;
             }
         } else {
@@ -105,10 +105,10 @@ void *session_object::run() {
             if (handle_request(type, dir_str, data_str) < 0) {
                 // errCode = 7
                 uint32_t errCode = 0x07;
-                perror("handle_request failed: 07");
+                std::cerr << "handle_request failed:[" << errCode << "]" << std::endl;
 
                 if (write(c_sock, &errCode, sizeof(uint32_t)) < 0) {
-                    std::cout << "Write Failed(HARD LOCK FAIL)" << std::endl;
+                    std::cerr << "Write Failed(HARD LOCK FAIL)" << std::endl;
                 }
             }
         }
@@ -129,12 +129,12 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
     auto check = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, full_file));
 
     if (check == true) {
-        fprintf(stderr, "%s lock check failed\n", __func__);
+        std::cerr << __func__ << " lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::READ, full_file)) != true) {
-        fprintf(stderr, "%s lock add failed\n", __func__);
+        std::cerr << __func__ << " lock add failed" << std::endl;
         return -1;
     }
 
@@ -143,32 +143,32 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
 
     int fRet = fm.get_stat_of_file(full_file.c_str(), &file_stat);
     if (fRet < 0) {
-        fprintf(stderr, "get_stat_of_file failed for %s\n", full_file.c_str());
+        std::cerr << full_file << " get_stat_of_file failed" << std::endl;
         return -1;
     }
 
     uint32_t fTotalSize = fm.stat_get_size(&file_stat);
 
     if (write(c_sock, &fTotalSize, sizeof(uint32_t)) != sizeof(uint32_t)) {
-        perror("Writing File Size Failed");
+        std::cerr << "Writing File Size failed" << std::endl;
         return -1;
     }
 
     uint32_t ackVal = -1;
 
     if (read(c_sock, &ackVal, sizeof(uint32_t)) < 0) {
-        perror("Getting File Size Ack failed");
+        std::cerr << "Get File Size ACK failed" << std::endl;
         return -1;
     }
 
     if (ackVal != 0) {
-        perror("Recvd File Size ack is not 0");
+        std::cerr << "Recvd File Size ACK is not 0" << std::endl;
     }
 
     FILE *filePtr = fopen(full_file.c_str(), "rb");
 
     if (filePtr == nullptr) {
-        perror("download open file fail");
+        std::cerr << "Download Open File failed" << std::endl;
         return -1;
     }
 
@@ -181,7 +181,7 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
         readBytes = fread(sendBuffer, 1, global_window_size, filePtr);
 
         if (readBytes <= 0) {
-            perror("READ FAILED WHILE READING FILE");
+            std::cerr << "Read Failed While Reading File" << std::endl;
             return -1;
 
         }
@@ -189,14 +189,14 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
         fSum += readBytes;
 
         if (write(c_sock, sendBuffer, readBytes) != readBytes) {
-            perror("WRITE FAILED ON STREAM(download)");
+            std::cerr << "Write Failed on Stream" << std::endl;
             fclose(filePtr);
             return -1;
         }
     }
 
     if (fclose(filePtr) == EOF) {
-        perror("download file close err");
+        std::cerr << "Download File Close failed" << std::endl;
         return -1;
     }
     return 0;
@@ -208,29 +208,30 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
     auto check_data_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, data));
 
     if ((check_dir_write | check_data_read | check_data_write) == true) {
-        perror("lock check failed");
+        std::cerr << "lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::READ, dir)) != true) {
-        perror("get lock dir read failed");
+        std::cerr << "get lock dir read failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, data)) != true) {
-        perror("get lock data write failed");
+        std::cerr << "get lock data write failed" << std::endl;
         return -1;
     }
 
     FILE *fromFile = fopen(dir.c_str(), "rb");
     if (fromFile == nullptr) {
-        perror("fromFile open failure");
+        std::cerr << "fopen " << dir << " failed" << std::endl;
         return -1;
     }
 
     FILE *toFile = fopen(data.c_str(), "wb");
     if (toFile == nullptr) {
-        perror("toFile open failure");
+        
+        std::cerr << "fopen " << dir << " failed" << std::endl;
         return -1;
     }
 
@@ -242,7 +243,7 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
         wSize = fwrite(buff, 1, rSize, toFile);
 
         if (wSize != rSize) {
-            perror("copy write fail");
+            std::cerr << "copy write failed" << std::endl;
             return -1;
         }
 
@@ -255,29 +256,30 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
         wSize = fwrite(buff, 1, rSize, toFile);
 
         if (wSize != rSize) {
-            perror("copy write fail 2");
+            std::cerr << "copy write(last chunk) failed" << std::endl;
             return -1;
         }
     }
 
     if (fclose(fromFile) == EOF) {
-        perror("fromfile fclose err");
+        std::cerr << "fclose for fromFile failed" << std::endl;
         return -1;
     }
 
     if (fclose(toFile) == EOF) {
-        perror("tofile fclose err");
+        std::cerr << "fclose for tofile failed" << std::endl;
         return -1;
     }
 
     char ackSendBuffer[4] = { 0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
-        perror(" REQ_TYPE_COPY_FILE, write != 4");
+        std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;
         return -1;
     }
     return 0;
 }
+
 int session_object::handleMove(session_lock& s_lock, std::string dir, std::string data) {
     auto check_dir_read = lock_handler::get_instance().check_lock(file_lock(lock_handler::READ, dir));
     auto check_dir_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, dir));
@@ -285,29 +287,29 @@ int session_object::handleMove(session_lock& s_lock, std::string dir, std::strin
     auto check_data_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, data));
 
     if ((check_dir_read | check_dir_write | check_data_read | check_data_write) == true) {
-        perror("check failed");
+        std::cerr << "lock check failed" << std::endl;
         return -1;
     }
     // need read and write lock
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, dir)) != true) {
-        perror("get write lock dir failed");
+        std::cerr << "get write lock dir failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, data)) != true) {
-        perror("get write lock data failed");
+        std::cerr << "get write lock data failed" << std::endl;
         return -1;
     }
 
     if (rename(dir.c_str(), data.c_str()) != 0) {
-        perror("rename in move failed");
+        std::cerr << "rename in move failed" << std::endl;
         return -1;
     }
 
     char ackSendBuffer[4] = { 0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
-        perror(" REQ_TYPE_MOVE_FILE, write != 4");
+        std::cerr << "REQ_TYPE_MOVE_FILE, write != 4" << std::endl;
         return -1;
     }
 
@@ -323,18 +325,19 @@ int session_object::handleDelete(session_lock& s_lock, std::string dir, std::str
     auto check_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, full_string));
 
     if ((check_read | check_write) == true) {
-        perror("check failed");
+        std::cerr << "check failed" << std::endl;
         return -1;
     }
 
     if (remove(full_string.c_str()) != 0) {
+        std::cerr << "delete remove failed" << std::endl;
         perror("delete remove failed");
     }
 
     char ackSendBuffer[4] = { 0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
-        perror(" REQ_TYPE_COPY_FILE, write != 4");
+        std::cerr << "REQ_TYPE_COPY_FILe, write != 4" << std::endl;
         return -1;
     }
     
@@ -346,24 +349,24 @@ int session_object::handleRename(session_lock& s_lock, std::string dir, std::str
     auto check_dir_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, dir));
 
     if ((check_dir_read | check_dir_write) == true) {
-        perror("check failed");
+        std::cerr << "lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, dir)) != true) {
-        perror("get write lock dir failed");
+        std::cerr << "get write lock dir failed" << std::endl;
         return -1;
     }
 
     if (rename(dir.c_str(), data.c_str()) != 0) {
-        perror("rename rename failed");
+        std::cerr << "rename failed" << std::endl;
         return -1;
     }
 
     char ackSendBuffer[4] = { 0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
-        perror(" REQ_TYPE_COPY_FILE, write != 4");
+        std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;
         return -1;
     }
 
@@ -374,12 +377,12 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
     auto check_dir_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, dir));
 
     if (check_dir_write == true) {
-        perror("check failed");
+        std::cerr << "lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::READ, dir)) != true) {
-        perror("get read lock dir failed");
+        std::cerr << "get read lock dir failed" << std::endl;
         return -1;
     }
     json_handler jh;
@@ -388,7 +391,7 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
     Json::Value dir_json_object(Json::arrayValue);
     int ret = jh.make_json_object(dir, &dir_json_object);
     if (ret < 0) {
-        perror("make json object failure");
+        std::cerr << "make json object failed" << std::endl;
         return -1;
     }
 
@@ -408,12 +411,13 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
             "%s", json_str.c_str());
 
     if (write(c_sock, send_buffer, 4 + buffer_size) < 0) {
-        std::cout << "Write Failed...\n" << std::endl;
+        std::cerr << "Write failed" << std::endl;
         return -1;
     }
 
     return 0;
 }
+
 int session_object::handleUpload(session_lock& s_lock, std::string dir, std::string data) {
     std::stringstream ss;
     ss << dir << data;
@@ -423,20 +427,20 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
     auto check_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, full_file));
 
     if ((check_read | check_write) == true) {
-        perror("check failed");
+        std::cerr << "lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, full_file)) != true) {
-        perror("get write lock failed");
+        std::cerr << "get write lock failed" << std::endl;
         return -1;
     }
 
     struct stat dummyStat;
     // check if file exists
     if (stat(full_file.c_str(), &dummyStat) >= 0) {
-        perror("Requested file already exists!");
         // file is already present
+        std::cerr << "requested file is already present" << std::endl;
         return -1;
     }
 
@@ -446,14 +450,14 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
     size_t ret = write(c_sock, &temp, sizeof(uint32_t));
 
     if (ret != sizeof(uint32_t)) {
-        perror("REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))");
+        std::cerr << "REQ_TYPE_UPLOAD_FILE, write size != sizeof(uint32_t))" << std::endl;
         return -1;
     }
 
     ret = read(c_sock, &temp, sizeof(uint32_t));
 
     if (ret != sizeof(uint32_t)) {
-        perror("REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))");
+        std::cerr << "REQ_TYPE_UPLOAD_FILE, read size != sizeof(uint32_t))" << std::endl;
         return -1;
     }
 
@@ -463,10 +467,11 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
 
     uint32_t fSum = 0;
     size_t readBytes = -1;
+
     while (fSum < temp) {
         readBytes = read(c_sock, recvBuffer, global_window_size);
         if (readBytes < 0) {
-            perror("READ FAILED WHILE READING STREAM");
+            std::cerr << "Read Failed While Reading Stream" << std::endl;
             fclose(file);
             return -1;
         }
@@ -474,21 +479,21 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
         fSum += readBytes;
 
         if (fwrite(recvBuffer, 1, readBytes, file) != readBytes) {
-            perror("WRITE FAILED WHILE PROCESSING STREAM");
+            std::cerr << "Write Failed While Processing Stream" << std::endl;
             fclose(file);
             return -1;
         }
     }
 
     if (fclose(file) == EOF) {
-        perror("upload file close fail");
+        std::cerr << "Upload File Close failed" << std::endl;
         return -1;
     }
 
     char ackSendBuffer[4] = { 0, };
     ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
-        perror(" REQ_TYPE_COPY_FILE, write != 4");
+        std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;
         return -1;
     }
 

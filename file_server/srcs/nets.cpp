@@ -7,7 +7,7 @@ int server_object::server_socket_init() {
     s_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (s_sock < 0) {
-        std::cerr << "Socket Generation Fail" << std::endl;
+        std::cerr << "Socket Generation failed" << std::endl;
         return -1;
     }
     return 0;
@@ -26,10 +26,10 @@ int server_object::server_socket_bind(uint16_t sPort) {
 
     if (ret < 0) {
         if (server_socket_close() < 0) {
-            perror("Server Socket Couldn't Close!");
+            std::cerr << "Server Socket close failed" << std::endl;
             return -2;
         }
-        perror("Socket Bind Fail");
+        std::cerr << "Server Bind failed" << std::endl;
         return -1;
     }
 
@@ -41,10 +41,10 @@ int server_object::server_socket_listen() {
 
     if (ret < 0) {
         if (server_socket_close() < 0) {
-            perror("Server Socket Couldn't Close !");
+            std::cerr << "Server Socket closed failed" << std::endl;
             return -2;
         }
-        perror("Socket Listen Fail");
+        std::cerr << "Socket Listen failed" << std::endl;
         return -1;
     }
     return 0;
@@ -70,10 +70,10 @@ int server_object::server_socket_start() {
         } else {
             char clientIpAddrStr[global_expected_ip_length] = {0, };
             if (inet_ntop(AF_INET, &client_addr, clientIpAddrStr, sizeof(clientIpAddrStr)) != NULL) {
-                fprintf(stdout, "Connected From :[%s]\n", clientIpAddrStr); 
+                std::cout << "Connected From :[" << clientIpAddrStr << "]" << std::endl;
                 new session_object(client_socket);
             } else {
-                perror("Client Socket IP Unknown");
+                std::cerr << "Unidentified Client Socket IP" << std::endl;
                 return -1;
             }
         }

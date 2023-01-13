@@ -48,7 +48,7 @@ int json_handler::directory_to_file_object_vector
     
     int ret = fm.files_in_directory_to_vector(dir_name, &file_names);
     if (ret < 0) {
-        perror("get file names failure");
+        std::cerr << "get file names failed" << std::endl;
         return -1;
     }
 
@@ -57,7 +57,7 @@ int json_handler::directory_to_file_object_vector
         int statRet = fm.get_stat_of_file(dir_name+"/" + s, &status);
 
         if (statRet < 0) {
-            perror("get stat failure");
+            std::cerr << "get stat failed" << std::endl;
             return -1;
         }
 
@@ -80,7 +80,7 @@ int json_handler::make_json_object(std::string dir_name, Json::Value *jvPtr) {
     int ret = directory_to_file_object_vector(dir_name, &basic_files);
 
     if (ret < 0) {
-        perror("Dir to File Vector failure");
+        std::cerr << "Dir to File Vector failed" << std::endl;
         return -1;
     }
 
@@ -112,7 +112,8 @@ bool lock_handler::add_lock(file_lock f_lock) {
     if (value->second == false) {
         locks[f_lock] = true;
     } else {
-        fprintf(stderr, "[ERR] TRIED TO RE-LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
+        std::cerr << "Tried to RE-LOCK, num:[" << f_lock.get_num() << "]"
+                  << " name:[" << f_lock.get_name() << "]" << std::endl;
         return false;
     }
 
@@ -123,7 +124,8 @@ bool lock_handler::remove_lock(file_lock f_lock) {
     auto value = locks.find(f_lock);
 
     if (value == locks.end()) {
-        fprintf(stderr, "[ERR] TRIED TO UNLOCK UNKNOWN LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
+        std::cerr << "Tried to UNLOCK UNKNOWN LOCK, num:[" << f_lock.get_num()
+                  << "] name:[" << f_lock.get_name() << "]" << std::endl;
         return false;
     } 
 
@@ -131,6 +133,8 @@ bool lock_handler::remove_lock(file_lock f_lock) {
         locks[f_lock] = false;
     } else {
         fprintf(stderr, "[ERR] TRIED TO UNLOCK FALSE LOCK : [%d:%s]\n", f_lock.get_num(), f_lock.get_name().c_str());
+        std::cerr << "Tried to UNLOCK FALSE LOCK, num:[" << f_lock.get_num()
+                  << "] name:[" << f_lock.get_name() << "]" << std::endl;
         return false;
     }
 
