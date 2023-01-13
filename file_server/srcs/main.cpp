@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     } else if (argc == 2) {
         uint16_t sPort = (uint16_t)(atoi(argv[1]));
         if (so.server_socket_bind(sPort) < 0) {
-            std::cerr << "Server Socket Bind Failed..." << std::endl;
+            std::cerr << "Server Socket Bind Failed... port:" << sPort << std::endl;
             exit(2);
         }   
     }

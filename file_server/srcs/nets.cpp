@@ -10,6 +10,7 @@ int server_object::server_socket_init() {
         std::cerr << "Socket Generation failed" << std::endl;
         return -1;
     }
+
     return 0;
 }
 
@@ -65,7 +66,6 @@ int server_object::server_socket_start() {
 
         int client_socket = accept(s_sock, (struct sockaddr*) &client_addr,
                                     &client_addr_size);
-
 
         if (client_socket < 0) {
             server_socket_close();

@@ -51,7 +51,7 @@ void *session_object::run() {
 
         bytes_read = read(c_sock, buffer, global_expected_MTU);
         if (bytes_read <= 0) {
-            std::cerr << "Socket Read failed" << std::endl;
+            std::cerr << __func__ << " Socket Read failed" << std::endl;
             break;
         } else if (bytes_read == 0) {
             // test if socket is open(without this check,
@@ -62,10 +62,10 @@ void *session_object::run() {
 
             int err = write(c_sock, test_buffer, 1);
             if (err < 0) {
-                std::cerr<< "Socket Closed on Client Side ! \n" << std::endl;
+                std::cerr << __func__ << " Socket Closed on Client Side ! \n" << std::endl;
                 break;
             } else {
-                std::cerr << "Socket recvd EOF" << std::endl;
+                std::cerr << __func__ << " Socket recvd EOF" << std::endl;
                 continue;
             }
         } else {
@@ -108,7 +108,7 @@ void *session_object::run() {
                 std::cerr << "handle_request failed:[" << errCode << "]" << std::endl;
 
                 if (write(c_sock, &errCode, sizeof(uint32_t)) < 0) {
-                    std::cerr << "Write Failed(HARD LOCK FAIL)" << std::endl;
+                    std::cerr << "Write Failed(LOCK FAIL)" << std::endl;
                 }
             }
         }
@@ -143,7 +143,7 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
 
     int fRet = fm.get_stat_of_file(full_file.c_str(), &file_stat);
     if (fRet < 0) {
-        std::cerr << full_file << " get_stat_of_file failed" << std::endl;
+        std::cerr << __func__ << " " << full_file << " get_stat_of_file failed" << std::endl;
         return -1;
     }
 
@@ -168,7 +168,7 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
     FILE *filePtr = fopen(full_file.c_str(), "rb");
 
     if (filePtr == nullptr) {
-        std::cerr << "Download Open File failed" << std::endl;
+        std::cerr << "Download Open File failed for " << full_file << std::endl;
         return -1;
     }
 
@@ -208,30 +208,30 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
     auto check_data_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, data));
 
     if ((check_dir_write | check_data_read | check_data_write) == true) {
-        std::cerr << "lock check failed" << std::endl;
+        std::cerr << __func__ << " lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::READ, dir)) != true) {
-        std::cerr << "get lock dir read failed" << std::endl;
+        std::cerr  << __func__ << " get lock dir read failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, data)) != true) {
-        std::cerr << "get lock data write failed" << std::endl;
+        std::cerr << __func__ << " get lock data write failed" << std::endl;
         return -1;
     }
 
     FILE *fromFile = fopen(dir.c_str(), "rb");
     if (fromFile == nullptr) {
-        std::cerr << "fopen " << dir << " failed" << std::endl;
+        std::cerr << __func__ << " fopen " << dir << " failed" << std::endl;
         return -1;
     }
 
     FILE *toFile = fopen(data.c_str(), "wb");
     if (toFile == nullptr) {
         
-        std::cerr << "fopen " << dir << " failed" << std::endl;
+        std::cerr << __func__ <<  "fopen " << dir << " failed" << std::endl;
         return -1;
     }
 
@@ -287,22 +287,22 @@ int session_object::handleMove(session_lock& s_lock, std::string dir, std::strin
     auto check_data_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, data));
 
     if ((check_dir_read | check_dir_write | check_data_read | check_data_write) == true) {
-        std::cerr << "lock check failed" << std::endl;
+        std::cerr<< __func__ << " lock check failed" << std::endl;
         return -1;
     }
     // need read and write lock
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, dir)) != true) {
-        std::cerr << "get write lock dir failed" << std::endl;
+        std::cerr << __func__ << " get write lock dir failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, data)) != true) {
-        std::cerr << "get write lock data failed" << std::endl;
+        std::cerr << __func__ << " get write lock data failed" << std::endl;
         return -1;
     }
 
     if (rename(dir.c_str(), data.c_str()) != 0) {
-        std::cerr << "rename in move failed" << std::endl;
+        std::cerr << "rename failed for " << dir << " to " << data << std::endl;
         return -1;
     }
 
@@ -325,12 +325,12 @@ int session_object::handleDelete(session_lock& s_lock, std::string dir, std::str
     auto check_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, full_string));
 
     if ((check_read | check_write) == true) {
-        std::cerr << "check failed" << std::endl;
+        std::cerr << __func__  << " lock check failed" << std::endl;
         return -1;
     }
 
     if (remove(full_string.c_str()) != 0) {
-        std::cerr << "delete remove failed" << std::endl;
+        std::cerr << "delete failed for " << full_string << std::endl;
         perror("delete remove failed");
     }
 
@@ -349,17 +349,17 @@ int session_object::handleRename(session_lock& s_lock, std::string dir, std::str
     auto check_dir_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, dir));
 
     if ((check_dir_read | check_dir_write) == true) {
-        std::cerr << "lock check failed" << std::endl;
+        std::cerr << __func__ << " lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, dir)) != true) {
-        std::cerr << "get write lock dir failed" << std::endl;
+        std::cerr << __func__ << " get write lock dir failed" << std::endl;
         return -1;
     }
 
     if (rename(dir.c_str(), data.c_str()) != 0) {
-        std::cerr << "rename failed" << std::endl;
+        std::cerr << "rename failed for " << dir << " to " << data << std::endl;
         return -1;
     }
 
@@ -377,12 +377,12 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
     auto check_dir_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, dir));
 
     if (check_dir_write == true) {
-        std::cerr << "lock check failed" << std::endl;
+        std::cerr << __func__ << " lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::READ, dir)) != true) {
-        std::cerr << "get read lock dir failed" << std::endl;
+        std::cerr << __func__ << " get read lock dir failed" << std::endl;
         return -1;
     }
     json_handler jh;
@@ -391,7 +391,7 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
     Json::Value dir_json_object(Json::arrayValue);
     int ret = jh.make_json_object(dir, &dir_json_object);
     if (ret < 0) {
-        std::cerr << "make json object failed" << std::endl;
+        std::cerr << "make json object failed for " << dir << std::endl;
         return -1;
     }
 
@@ -427,12 +427,12 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
     auto check_write = lock_handler::get_instance().check_lock(file_lock(lock_handler::WRITE, full_file));
 
     if ((check_read | check_write) == true) {
-        std::cerr << "lock check failed" << std::endl;
+        std::cerr << __func__ << " lock check failed" << std::endl;
         return -1;
     }
 
     if (s_lock.add_lock(file_lock(lock_handler::WRITE, full_file)) != true) {
-        std::cerr << "get write lock failed" << std::endl;
+        std::cerr << __func__ << " get write lock failed" << std::endl;
         return -1;
     }
 
@@ -440,7 +440,7 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
     // check if file exists
     if (stat(full_file.c_str(), &dummyStat) >= 0) {
         // file is already present
-        std::cerr << "requested file is already present" << std::endl;
+        std::cerr << "requested file is already present, file " << full_file << std::endl;
         return -1;
     }
 

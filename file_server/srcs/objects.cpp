@@ -48,16 +48,16 @@ int json_handler::directory_to_file_object_vector
     
     int ret = fm.files_in_directory_to_vector(dir_name, &file_names);
     if (ret < 0) {
-        std::cerr << "get file names failed" << std::endl;
+        std::cerr << "get file names failed for " << dir_name << std::endl;
         return -1;
     }
 
     for (std::string s : file_names) {
         struct stat status;
-        int statRet = fm.get_stat_of_file(dir_name+"/" + s, &status);
+        int statRet = fm.get_stat_of_file(dir_name+ "/" + s, &status);
 
         if (statRet < 0) {
-            std::cerr << "get stat failed" << std::endl;
+            std::cerr << "get stat failed for " << dir_name << std::endl;
             return -1;
         }
 
@@ -80,7 +80,7 @@ int json_handler::make_json_object(std::string dir_name, Json::Value *jvPtr) {
     int ret = directory_to_file_object_vector(dir_name, &basic_files);
 
     if (ret < 0) {
-        std::cerr << "Dir to File Vector failed" << std::endl;
+        std::cerr << "Dir to File Vector failed for " << dir_name << std::endl;
         return -1;
     }
 

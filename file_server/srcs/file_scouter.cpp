@@ -16,7 +16,7 @@ int file_manager::files_in_directory_to_vector(std::string string_dir_name, std:
         closedir(dir);
     } else {
         // could not open directory
-        std::cerr << "opendir failed" << std::endl;
+        std::cerr << "opendir failed for " << string_dir_name << std::endl;
         return -1;
     }
     return 0;
