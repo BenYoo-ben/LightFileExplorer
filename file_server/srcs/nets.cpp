@@ -55,7 +55,10 @@ int server_object::server_socket_start() {
     socklen_t client_addr_size = sizeof(struct sockaddr_in);
 
     // prevent server from dying when writing to closed sockets.
-    signal(SIGPIPE, SIG_IGN);
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+        std::cerr << "SIGPIPE SIG_IGN failed" << std::endl;
+        return -1;
+    }
 
     while (true) {
         struct sockaddr_in client_addr;
