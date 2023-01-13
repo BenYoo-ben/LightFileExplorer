@@ -42,22 +42,20 @@ int session_object::handle_request(char type, std::string dir, std::string data)
 
 void *session_object::run() {
     const int MTU = global_expected_MTU;
-    char buffer[MTU];
+    char buffer[MTU] = {0, };
     int bytes_read;
 
     while (true) {
-        memset(buffer, 0x0, global_expected_MTU);
         bytes_read = 0;
 
         bytes_read = read(c_sock, buffer, global_expected_MTU);
         if (bytes_read <= 0) {
             std::cerr << __func__ << " Socket Read failed" << std::endl;
             break;
+
         } else if (bytes_read == 0) {
-            // test if socket is open(without this check,
-            // this thread tries to read to closd socket
-            // reaching 100% cpu usage).
-            char test_buffer[2];
+            // prevent from writing to closed sockets(by client)
+            char test_buffer[2] = {0, };
             snprintf(test_buffer, sizeof(test_buffer), "0");
 
             int err = write(c_sock, test_buffer, 1);
@@ -69,7 +67,6 @@ void *session_object::run() {
                 continue;
             }
         } else {
-            // valid data is read
             // parse data(type(1), dir_length(4), dir, data_length(4), data)
             char type;
             uint32_t dir_size;
@@ -172,7 +169,7 @@ int session_object::handleDownload(session_lock& s_lock, std::string dir, std::s
         return -1;
     }
 
-    char sendBuffer[global_window_size];
+    char sendBuffer[global_window_size] ={0, };
 
     uint32_t fSum = 0;
     ssize_t readBytes = -1;
@@ -235,7 +232,7 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
         return -1;
     }
 
-    char buff[global_window_size];
+    char buff[global_window_size] = {0, };
     uint32_t rSize, wSize;
 
     // read --> write(chunk size)
@@ -271,7 +268,7 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
         return -1;
     }
 
-    char ackSendBuffer[4] = { 0, };
+    char ackSendBuffer[4] = {0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
         std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;
@@ -306,7 +303,7 @@ int session_object::handleMove(session_lock& s_lock, std::string dir, std::strin
         return -1;
     }
 
-    char ackSendBuffer[4] = { 0, };
+    char ackSendBuffer[4] = {0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
         std::cerr << "REQ_TYPE_MOVE_FILE, write != 4" << std::endl;
@@ -334,7 +331,7 @@ int session_object::handleDelete(session_lock& s_lock, std::string dir, std::str
         perror("delete remove failed");
     }
 
-    char ackSendBuffer[4] = { 0, };
+    char ackSendBuffer[4] = {0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
         std::cerr << "REQ_TYPE_COPY_FILe, write != 4" << std::endl;
@@ -363,7 +360,7 @@ int session_object::handleRename(session_lock& s_lock, std::string dir, std::str
         return -1;
     }
 
-    char ackSendBuffer[4] = { 0, };
+    char ackSendBuffer[4] = {0, };
     size_t ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
         std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;
@@ -400,9 +397,8 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
     int buffer_size = json_str.length();
 
     const int kBufSize = 4 + buffer_size + 1;
-    char send_buffer[kBufSize];
+    char send_buffer[kBufSize] = {0, };
 
-    memset(send_buffer, 0x0, buffer_size);
     uint32_t data_size = buffer_size;
 
     memcpy(send_buffer, &data_size, 4);
@@ -446,7 +442,6 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
 
     // send ack, server is ready for data stream
     uint32_t temp = 0;
-    memset(&temp, 0x00, sizeof(uint32_t));
     size_t ret = write(c_sock, &temp, sizeof(uint32_t));
 
     if (ret != sizeof(uint32_t)) {
@@ -463,7 +458,7 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
 
     FILE *file = fopen(full_file.c_str(), "wb");
 
-    char recvBuffer[global_window_size];
+    char recvBuffer[global_window_size] = {0, };
 
     uint32_t fSum = 0;
     size_t readBytes = -1;
@@ -490,7 +485,7 @@ int session_object::handleUpload(session_lock& s_lock, std::string dir, std::str
         return -1;
     }
 
-    char ackSendBuffer[4] = { 0, };
+    char ackSendBuffer[4] = {0, };
     ret = write(c_sock, ackSendBuffer, 4);
     if (ret != 4) {
         std::cerr << "REQ_TYPE_COPY_FILE, write != 4" << std::endl;

@@ -53,7 +53,7 @@ std::string file_manager::stat_get_time(struct stat *st) {
 
     localtime_r(&st->st_mtime, &mtime);
 
-    char str_buffer[256];
+    char str_buffer[NAME_MAX] = {0, };
 
     snprintf(str_buffer, sizeof(str_buffer), "%04d-%02d-%02d %02d:%02d",
         mtime.tm_year+1900,
@@ -70,7 +70,8 @@ int file_manager::stat_get_size(struct stat *st) {
 }
 
 std::string file_manager::stat_get_permission(struct stat *st) {
-    char str_buffer[10];
+    constexpr auto buffSize = 10;
+    char str_buffer[buffSize] = {0, };
 
     mode_t permission_mode = st->st_mode;
 
