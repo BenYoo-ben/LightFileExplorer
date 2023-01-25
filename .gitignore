@@ -35,5 +35,10 @@ build/
 ### Dependency directories ###
 node_modules/
 
-### Host address and port
-tcp-server.json
+### SSL Files
+*.pem
+*.crt
+*.cer
+*.csr
+*.der
+*.jks

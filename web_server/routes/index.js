@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const TCPClient = require('../tcp-client');
 
-const tcp_server = JSON.parse(fs.readFileSync('tcp-server.json'));
+const tcp_server = JSON.parse(fs.readFileSync('config.json'));
 
 // Get Home directory's info
 router.get('/', async (req, res, next) => {
