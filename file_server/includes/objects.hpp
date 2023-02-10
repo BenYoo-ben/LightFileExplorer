@@ -5,6 +5,9 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 #include "common.hpp"
 #include "file_scouter.hpp"
@@ -211,6 +214,36 @@ public:
     }
 
     bool add_lock(file_lock f_lock);
+};
+
+template <class T>
+class TSQueue {
+private:
+    std::queue<T> q;
+    std::mutex m;
+    std::condition_variable c;
+
+public:
+    TSQueue() : q(), m(), c() {}
+
+    void push(T t) {
+        std::lock_guard<std::mutex> raii_lock(m);
+        q.push(t);
+        c.notify_one();
+    }
+
+    T pop() {
+        std::lock_guard<std::mutex> raii_lock(m);
+        T&& data = q.front();
+        q.pop();
+        c.notify_one();
+        return data;
+    }
+
+    std::size_t size() {
+        std::lock_guard<std::mutex> raii_lock(m);
+        return q.size(); 
+    }
 };
 
 #endif  // SERVER_INCLUDES_OBJECTS_HPP_

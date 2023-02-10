@@ -1,11 +1,14 @@
 #ifndef SERVER_INCLUDES_SESSION_HPP_
 #define SERVER_INCLUDES_SESSION_HPP_
 
-#include <pthread.h>
 #include <unistd.h>
 
 #include <string>
 #include <stack>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <memory>
 
 #include "common.hpp"
 #include "global.hpp"
@@ -19,9 +22,15 @@ private:
 
     pthread_t session_thread;
 
+    std::shared_ptr<TSQueue<int>> sockQueue;
+    std::shared_ptr<std::mutex> mt;
+    std::shared_ptr<std::condition_variable> cv;
+
 public:
     session_object() = default;
-    session_object(int established_socket);
+    session_object(std::shared_ptr<TSQueue<int>> sockQueue,
+            std::shared_ptr<std::mutex> mt,
+            std::shared_ptr<std::condition_variable> cv);
 
     session_object(const session_object& other) {
         this->ID = other.ID;
@@ -47,7 +56,8 @@ public:
     int handle_request(char type, std::string dir, std::string data);
 
     void close_socket();
-    void *run();
+    void run();
+    void doTask(int c_sock);
 
     int handleDownload(session_lock& s_locks, std::string dir, std::string data);
     int handleCopy(session_lock& s_locks, std::string dir, std::string data);

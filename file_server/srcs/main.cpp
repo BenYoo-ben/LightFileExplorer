@@ -8,9 +8,21 @@
 int main(int argc, char *argv[]) {
     server_object so;
 
-    if (argc > 2) {
-        std::cerr << "This program can only have 1 argument or no argument\n $" << argv[0]
-                  << "[optional:Port Number]" << std::endl;
+    auto opt;
+
+    uint16_t sPort = global_server_port;;
+    auto numThread = 1; 
+
+    while ((opt = getopt(argc, argv, "pt")) != -1) {
+        switch (opt) {
+            case 'p':
+                sPort = static_cast<uint16_t>(atoi(optarg));
+                break;
+            case 't':
+                numThread = atoi(optarg);
+            case '?':
+                std::cerr << "Unknown option: " << char(optopt) << "'!'" << std::endl;
+        }
     }
 
     if (so.server_socket_init() < 0) {
@@ -18,23 +30,15 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (argc == 1) {
-        if (so.server_socket_bind(global_server_port) < 0) {
-            std::cerr << "Server Socket Bind Failed..." << std::endl;
-            exit(2);
-        }
-    } else if (argc == 2) {
-        uint16_t sPort = (uint16_t)(atoi(argv[1]));
-        if (so.server_socket_bind(sPort) < 0) {
-            std::cerr << "Server Socket Bind Failed... port:" << sPort << std::endl;
-            exit(2);
-        }   
-    }
+    if (so.server_socket_bind(sPort) < 0) {
+        std::cerr << "Server Socket Bind Failed... port:" << sPort << std::endl;
+        exit(2);
+    }   
 
     if (so.server_socket_listen() < 0) {
         std::cerr << "Server Socket Listen Failed..." << std::endl;
         exit(3);
     }
 
-    so.server_socket_start();
+    so.server_socket_start(numThread);
 }

@@ -1,18 +1,11 @@
 #include "session.hpp"
 
-template<class C, void* (C::* thread_run)()>
-void* pthread_member_wrapper(void* data) {
-    C* obj = static_cast<C*>(data);
-    return (obj->*thread_run)();
-}
-
-session_object::session_object(int established_socket) {
-    c_sock = established_socket;
-    pthread_create(&session_thread,
-            NULL,
-            pthread_member_wrapper<session_object,
-            &session_object::run>,
-            this);
+session_object::session_object(std::shared_ptr<TSQueue<int>> sockQueue,
+        std::shared_ptr<std::mutex> mt,
+        std::shared_ptr<std::condition_variable> cv) {
+    this->sockQueue = sockQueue;
+    this->mt = mt;
+    this->cv = cv; 
 }
 
 int session_object::handle_request(char type, std::string dir, std::string data) {
@@ -40,7 +33,19 @@ int session_object::handle_request(char type, std::string dir, std::string data)
     return 0;
 }
 
-void *session_object::run() {
+void session_object::run() {
+    while (true) {
+        if (this->sockQueue.size() <= 0) {
+            std::unique_lock lck(this->mt);
+            std::wait(lck);
+            std::unlock(lck);
+        }
+
+        doTask(sockQueue.pop());
+    }
+}
+
+void session_object::doTask(int c_sock) {
     const int MTU = global_expected_MTU;
     char buffer[MTU] = {0, };
     int bytes_read;
@@ -227,7 +232,7 @@ int session_object::handleCopy(session_lock& s_lock, std::string dir, std::strin
 
     FILE *toFile = fopen(data.c_str(), "wb");
     if (toFile == nullptr) {
-        
+
         std::cerr << __func__ <<  "fopen " << dir << " failed" << std::endl;
         return -1;
     }
@@ -337,7 +342,7 @@ int session_object::handleDelete(session_lock& s_lock, std::string dir, std::str
         std::cerr << "REQ_TYPE_COPY_FILe, write != 4" << std::endl;
         return -1;
     }
-    
+
     return 0;
 }
 
@@ -383,7 +388,7 @@ int session_object::handleDirInfoD1(session_lock& s_lock, std::string dir, std::
         return -1;
     }
     json_handler jh;
-    
+
 
     Json::Value dir_json_object(Json::arrayValue);
     int ret = jh.make_json_object(dir, &dir_json_object);

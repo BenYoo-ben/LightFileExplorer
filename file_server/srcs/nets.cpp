@@ -52,7 +52,7 @@ int server_object::server_socket_listen() {
 }
 
 
-int server_object::server_socket_start() {
+int server_object::server_socket_start(int numThread) {
     socklen_t client_addr_size = sizeof(struct sockaddr_in);
 
     // prevent server from dying when writing to closed sockets.
@@ -61,11 +61,28 @@ int server_object::server_socket_start() {
         return -1;
     }
 
+    std::vector<std::thread> threadIds(0);
+
+
+    for (auto i = 0; i < numThread; i++) {
+        threadIds.push_back(std::thread(&session_object::run,
+                    new session_object(std::make_shared<TSQueue<int>>(this->sockQueue),
+                        std::make_shared<std::mutex>(this->mt),
+                        std::make_shared<std::condition_variable>(this->cv))));
+    }
+    
+    std::thread awake_thread(&server_object::awaker, this);
+
+    for (auto i = 0; i < numThread; i++) {
+        threadIds[i].detach();
+    }
+    awake_thread.detach();
+
     while (true) {
         struct sockaddr_in client_addr;
 
         int client_socket = accept(s_sock, (struct sockaddr*) &client_addr,
-                                    &client_addr_size);
+                &client_addr_size);
 
         if (client_socket < 0) {
             server_socket_close();
@@ -73,8 +90,8 @@ int server_object::server_socket_start() {
         } else {
             char clientIpAddrStr[global_expected_ip_length] = {0, };
             if (inet_ntop(AF_INET, &client_addr, clientIpAddrStr, sizeof(clientIpAddrStr)) != NULL) {
+                sockQueue.push(client_socket);
                 std::cout << "Connected From :[" << clientIpAddrStr << "]" << std::endl;
-                new session_object(client_socket);
             } else {
                 std::cerr << "Unidentified Client Socket IP" << std::endl;
                 return -1;
@@ -86,4 +103,13 @@ int server_object::server_socket_start() {
 
 int server_object::server_socket_close() {
     return close(this->s_sock);
+}
+
+int server_object::awaker() {
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (this->sockQueue.size() > 0) {
+            this->cv.notify_one();
+        }
+    }
 }
