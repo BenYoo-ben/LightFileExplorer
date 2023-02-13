@@ -1,8 +1,8 @@
 #include "session.hpp"
 
 session_object::session_object(std::shared_ptr<TSQueue<int>> sockQueue,
-        std::shared_ptr<std::mutex> mt,
-        std::shared_ptr<std::condition_variable> cv) {
+        std::mutex* mt,
+        std::condition_variable* cv) {
     this->sockQueue = sockQueue;
     this->mt = mt;
     this->cv = cv; 
@@ -35,13 +35,12 @@ int session_object::handle_request(char type, std::string dir, std::string data)
 
 void session_object::run() {
     while (true) {
-        if (this->sockQueue.size() <= 0) {
-            std::unique_lock lck(this->mt);
-            std::wait(lck);
-            std::unlock(lck);
+        if (this->sockQueue->size() <= 0) {
+            std::unique_lock<std::mutex> lck(*mt);
+            cv->wait(lck);
         }
 
-        doTask(sockQueue.pop());
+        doTask(sockQueue->pop());
     }
 }
 
@@ -116,7 +115,6 @@ void session_object::doTask(int c_sock) {
         }
     }
     delete(this);
-    return NULL;
 }
 
 void session_object::close_socket() {

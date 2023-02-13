@@ -8,8 +8,7 @@
 int main(int argc, char *argv[]) {
     server_object so;
 
-    auto opt;
-
+    int opt;
     uint16_t sPort = global_server_port;;
     auto numThread = 1; 
 

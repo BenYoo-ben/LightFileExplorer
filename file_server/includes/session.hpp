@@ -23,14 +23,14 @@ private:
     pthread_t session_thread;
 
     std::shared_ptr<TSQueue<int>> sockQueue;
-    std::shared_ptr<std::mutex> mt;
-    std::shared_ptr<std::condition_variable> cv;
+    std::mutex* mt;
+    std::condition_variable* cv;
 
 public:
     session_object() = default;
     session_object(std::shared_ptr<TSQueue<int>> sockQueue,
-            std::shared_ptr<std::mutex> mt,
-            std::shared_ptr<std::condition_variable> cv);
+            std::mutex* mt,
+            std::condition_variable* cv);
 
     session_object(const session_object& other) {
         this->ID = other.ID;

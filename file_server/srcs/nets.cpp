@@ -66,9 +66,11 @@ int server_object::server_socket_start(int numThread) {
 
     for (auto i = 0; i < numThread; i++) {
         threadIds.push_back(std::thread(&session_object::run,
-                    new session_object(std::make_shared<TSQueue<int>>(this->sockQueue),
-                        std::make_shared<std::mutex>(this->mt),
-                        std::make_shared<std::condition_variable>(this->cv))));
+                    new session_object(
+                        std::make_shared<decltype(sockQueue)>(sockQueue),
+                        &mt,
+                        &cv
+                        )));
     }
     
     std::thread awake_thread(&server_object::awaker, this);

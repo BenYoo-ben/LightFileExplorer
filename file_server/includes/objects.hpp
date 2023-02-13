@@ -220,28 +220,36 @@ template <class T>
 class TSQueue {
 private:
     std::queue<T> q;
-    std::mutex m;
-    std::condition_variable c;
+    std::mutex* m;
+    std::condition_variable* c;
 
 public:
-    TSQueue() : q(), m(), c() {}
+    TSQueue() {
+        m = new std::mutex();
+        c = new std::condition_variable();
+    }
+
+    ~TSQueue() {
+        delete(c);
+        delete(m);
+    }
 
     void push(T t) {
-        std::lock_guard<std::mutex> raii_lock(m);
+        std::lock_guard<std::mutex> raii_lock(*m);
         q.push(t);
-        c.notify_one();
+        c->notify_one();
     }
 
     T pop() {
-        std::lock_guard<std::mutex> raii_lock(m);
-        T&& data = q.front();
+        std::lock_guard<std::mutex> raii_lock(*m);
+        T data = q.front();
         q.pop();
-        c.notify_one();
+        c->notify_one();
         return data;
     }
 
     std::size_t size() {
-        std::lock_guard<std::mutex> raii_lock(m);
+        std::lock_guard<std::mutex> raii_lock(*m);
         return q.size(); 
     }
 };
